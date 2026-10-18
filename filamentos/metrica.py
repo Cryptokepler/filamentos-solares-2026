@@ -92,3 +92,18 @@ def resumen(res):
     return (f"PQ {res.pq:.4f} (forma SQ {res.sq:.3f} x detección RQ {res.rq:.3f}) | "
             f"TP {res.tp} FP {res.fp} FN {res.fn} | "
             f"fragmentados {res.uno_a_muchos} fusionados {res.muchos_a_uno}")
+
+
+def detalle_errores(reales, predichas):
+    """Para cada filamento real y predicho: si acertó y su mejor IoU con el otro lado.
+
+    Sirve para separar los errores "de verdad" (IoU casi 0: inventado o no visto) de los
+    "casi aciertos" (IoU 0,1-0,5: lo vio, pero lo partió, lo fusionó o dibujó mal el borde).
+    """
+    inter, area_r, area_p = _matriz_solape(reales, predichas)
+    if area_r is None:
+        return [(False, 0.0)] * len(reales), [(False, 0.0)] * len(predichas)
+    iou = inter / (area_r[:, None] + area_p[None, :] - inter)
+    mejor_r, mejor_p = iou.max(axis=1), iou.max(axis=0)
+    return ([(bool(v > UMBRAL_IOU), float(v)) for v in mejor_r],
+            [(bool(v > UMBRAL_IOU), float(v)) for v in mejor_p])

@@ -207,6 +207,49 @@ for n, e in peores:
     print(f"  {n}: PQ {e['pq']:.2f}  (aciertos {e['tp']}, inventados {e['fp']}, se le escapan {e['fn']})")
 """)
 
+md("""
+## Informe de errores
+¿Dónde falla? Cada filamento inventado (FP) y cada filamento que se le escapa (FN) se clasifica por
+tamaño, distancia al borde del Sol, oscuridad y telescopio. Y por tipo de error:
+- **casi**: la red lo vio pero lo partió, lo fusionó o dibujó mal el borde (mejor IoU entre 0,1 y 0,5)
+- **puro**: inventado de la nada o no visto en absoluto (mejor IoU < 0,1)
+""")
+code("""
+import pandas as pd
+from PIL import Image
+from filamentos.metrica import detalle_errores
+TELESCOPIO = {'B': 'Big Bear', 'M': 'Mauna Loa', 'L': 'Learmonth', 'U': 'Udaipur', 'T': 'Teide', 'C': 'Cerro Tololo'}
+filas = []
+for n in val:
+    pred = O.a_instancias(probs[n], cache[n][1], **MEJOR_POST)
+    r_g = np.asarray(Image.fromarray(cache[n][1]).resize((2048, 2048), Image.BILINEAR))
+    contraste = np.asarray(Image.fromarray(cache[n][0][1]).resize((2048, 2048), Image.BILINEAR)) * 1.5
+    tel = TELESCOPIO.get(os.path.splitext(n)[0][-2], '?')
+    for anot, anns in ANOT[n].items():
+        reales = mascaras_de(anns)
+        d_r, d_p = detalle_errores(reales, pred)
+        for lado, mascaras, det in (('real', reales, d_r), ('red', pred, d_p)):
+            for m, (ok, iou) in zip(mascaras, det):
+                filas.append(dict(imagen=n, anotador=anot, lado=lado, acierto=ok, iou=iou, area=int(m.sum()),
+                                  radio=float(r_g[m].mean()), contraste=float(contraste[m].mean()), telescopio=tel))
+E = pd.DataFrame(filas)
+E['error'] = np.where(E.acierto, 'acierto', np.where(E.iou >= 0.1, 'casi', 'puro'))
+E['tamaño'] = pd.cut(E.area, [0, 330, 1000, 3000, 10000, 1e9], labels=['<330', '330-1k', '1k-3k', '3k-10k', '>10k'])
+E['zona'] = pd.cut(E.radio, [0, 0.5, 0.8, 0.9, 2], labels=['centro <0,5', '0,5-0,8', '0,8-0,9', 'borde >0,9'])
+E['oscuridad'] = pd.cut(E.contraste, [0, 0.8, 0.9, 0.95, 9], labels=['muy oscuro <0,8', '0,8-0,9', '0,9-0,95', 'casi fondo >0,95'])
+E.to_csv('errores_examen.csv', index=False)
+
+def tabla(col):
+    t = pd.crosstab([E.lado, E[col]], E.error)
+    t['% acierto'] = (100 * t.get('acierto', 0) / t.sum(axis=1)).round(0)
+    return t
+
+pd.set_option('display.width', 200)
+for col in ('tamaño', 'zona', 'oscuridad', 'telescopio'):
+    print(f'\\n=== Por {col} (real = filamentos de los expertos; red = lo que dibujó la red) ===')
+    print(tabla(col))
+""")
+
 md("## Predicción del test y `submission.csv`\nEl archivo se genera pero **no se envía**.")
 code("""
 import csv
