@@ -1,0 +1,7 @@
+# Datos de la competición: no se redistribuyen
+MAGFiLO_1.0_Kaggle_2026/
+*.zip
+visor/data.js
+*.csv
+__pycache__/
+.DS_Store
