@@ -21,7 +21,7 @@ Entrenar **no gasta** las imágenes: la red las mira muchas veces y siguen ahí.
 1. **Un cambio por experimento.** Si cambiamos dos cosas a la vez, no sabemos cuál ayudó.
 2. **Todo se apunta** en `docs/experimentos.md`: qué se cambió, la nota y qué se vio. Esto también sirve para el informe final.
 3. **No se envía nada a Kaggle** hasta que la nota local supere 0,34 (el acuerdo entre expertos). Si nos quedamos cerca, lo hablamos.
-4. Kaggle da unas 30 horas de GPU gratis a la semana. Cada experimento tarda 1–2 h, así que caben unos 10–15 por semana.
+4. Kaggle da unas 30 horas de GPU gratis a la semana (2 GPU T4; conviene usar las dos). **Plan B** si no basta (p. ej. para entrenar a 2048 px): alquilar una GPU en AWS (g5.xlarge). Antes hay que pedir a AWS que suba el límite de GPU de la cuenta. Cada experimento tarda 1–2 h, así que caben unos 10–15 por semana.
 
 ## Paso 1: primer entrenamiento (esta semana)
 
