@@ -57,6 +57,14 @@ Después de cada mejora: nota nueva, comparar con la anterior y quedarse con lo 
 - **Cómo vota:** se suman las 5 opiniones y solo queda lo que la mayoría ve.
 - **Meta:** que la votación suba la nota respecto a una sola red.
 
+## Idea de jhonatan: consenso entre telescopios
+
+GONG tiene 6 telescopios (la letra al final del nombre de la imagen: B, M, L, U, T, C). En el test cada imagen es de un solo telescopio, pero las reglas permiten datos externos y GONG publica en abierto las imágenes de todos.
+
+- **Paso previo (gratis):** medir con las predicciones del examen si la red falla más en algún observatorio.
+- **La idea:** para cada imagen, descargar las de los otros telescopios a la misma hora, alinearlas, pasar la red por todas y quedarse con lo que ven varios. Un filamento visto por 3–4 telescopios es real; una mancha en uno solo suele ser una nube o un defecto de cámara.
+- **Cuándo:** después del paso 4, si la red ya está en buen nivel. Es el revisor con telescopios en vez de modelos.
+
 ## Paso 5: juez final y primer envío (semana 4)
 
 - Ajustar las reglas del juez sobre la votación del revisor.
