@@ -14,7 +14,7 @@ Imitar cómo trabajan los expertos: **observador → revisor → juez**.
 - `filamentos/clasico.py`: línea base sin aprendizaje (zonas oscuras + reglas).
 - `visor/`: visor web de imágenes y anotaciones.
 - `analisis/`: estudios de los datos.
-- `docs/`: plan, reglas y [base de conocimiento](docs/conocimiento/README.md) con fuentes científicas.
+- `docs/`: plan, reglas, [roadmap de entrenamiento](docs/roadmap-entrenamiento.md), [diario de experimentos](docs/experimentos.md) y [base de conocimiento](docs/conocimiento/README.md) con fuentes científicas.
 - `notebooks/`: notebook de entrenamiento para Kaggle.
 
 ## Resultados locales
