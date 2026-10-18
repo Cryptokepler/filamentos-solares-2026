@@ -63,7 +63,7 @@ GONG tiene 6 telescopios (la letra al final del nombre de la imagen: B, M, L, U,
 
 - **Paso previo (gratis):** medir con las predicciones del examen si la red falla más en algún observatorio.
 - **La idea:** para cada imagen, descargar las de los otros telescopios a la misma hora, alinearlas, pasar la red por todas y quedarse con lo que ven varios. Un filamento visto por 3–4 telescopios es real; una mancha en uno solo suele ser una nube o un defecto de cámara.
-- **Cuándo:** después del paso 4, si la red ya está en buen nivel. Es el revisor con telescopios en vez de modelos.
+- **Cuándo:** solo como plan B. Decisión de jhonatan (18 oct): primero exprimir las imágenes de la competición; si nos atascamos con ellas, pasamos a datos externos (permitidos si son públicos y gratis).
 
 ## Paso 5: juez final y primer envío (semana 4)
 
