@@ -14,7 +14,8 @@ Imitar cómo trabajan los expertos: **observador → revisor → juez**.
 - `filamentos/clasico.py`: línea base sin aprendizaje (zonas oscuras + reglas).
 - `visor/`: visor web de imágenes y anotaciones.
 - `analisis/`: estudios de los datos.
-- `docs/`: plan y reglas.
+- `docs/`: plan, reglas y [base de conocimiento](docs/conocimiento/README.md) con fuentes científicas.
+- `notebooks/`: notebook de entrenamiento para Kaggle.
 
 ## Resultados locales
 | Método | PQ | Datos |
@@ -34,3 +35,10 @@ Los datos no se incluyen en el repositorio.
 cd visor && python3 build_visor.py ../MAGFiLO_1.0_Kaggle_2026
 cd .. && python3 -m http.server 8000   # abrir http://localhost:8000/visor/
 ```
+
+## Entrenar el observador en Kaggle
+`notebooks/entrenar_observador.ipynb` lleva el código incrustado (se regenera con `python3 notebooks/generar_notebook.py`).
+1. En Kaggle: *Create → New Notebook → File → Import Notebook* y subir el `.ipynb`.
+2. *Add Input*: la competición `filament-segmentation-2026`.
+3. *Settings*: Accelerator **GPU T4 x2** o **P100**, Internet **On**.
+4. *Run All*. Imprime la PQ de validación y deja `submission.csv` en *Output* (no se envía solo).
