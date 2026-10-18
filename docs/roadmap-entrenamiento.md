@@ -8,11 +8,11 @@ Entrenar **no gasta** las imágenes: la red las mira muchas veces y siguen ahí.
 
 | Grupo | Imágenes | Para qué | Quién lo ve |
 |---|---|---|---|
-| **Estudio** | ~600 | La red aprende con ellas | La red |
-| **Examen** | ~100 | Nota local (PQ) después de cada experimento | Nadie durante el entrenamiento |
+| **Estudio** | 586 | La red aprende con ellas | La red |
+| **Examen** | 121 (49 con 2–3 expertos) | Nota local (PQ) después de cada experimento | Nadie durante el entrenamiento |
 | **Test de Kaggle** | 180 | La nota oficial | Solo Kaggle tiene las respuestas |
 
-- El examen es siempre el mismo grupo de ~100 imágenes (elegido por el nombre del archivo, así que se repite igual cada vez). Así las notas de distintos experimentos se pueden comparar.
+- El examen es siempre el mismo grupo de 121 imágenes (elegido por el nombre del archivo, así que se repite igual cada vez). Así las notas de distintos experimentos se pueden comparar.
 - No hay que subir imágenes a ningún sitio: los datos ya están en Kaggle y el notebook los lee desde allí.
 - Al final, cuando ya no queden decisiones por tomar, la red aprenderá con **las 707** para dar la respuesta definitiva.
 
@@ -28,11 +28,11 @@ Entrenar **no gasta** las imágenes: la red las mira muchas veces y siguen ahí.
 - **Qué:** ejecutar `notebooks/entrenar_observador.ipynb` tal cual.
 - **Meta:** superar el 0,10 de la línea base de reglas.
 - **Qué mirar:** la nota y el desglose. Se cuentan los aciertos, los falsos (inventados), los que se le escapan, los partidos (1 real → varios trozos) y los fusionados (varios reales → 1 mancha).
-- **Siguiente código (Claude):** que el notebook guarde las predicciones del examen para verlas en el visor junto a los dibujos de los expertos.
+- **Ya preparado (a partir del 2.º entrenamiento):** el notebook guarda `predicciones_examen.json` para ver en el visor lo que predice la red junto a los dibujos de los expertos.
 
 ## Paso 2: diagnóstico (jhonatan + visor)
 
-- **Qué:** mirar en el visor las ~100 imágenes del examen con la predicción encima.
+- **Qué:** mirar en el visor (opción *Examen de la red*) las 121 imágenes del examen con la predicción encima, ordenadas de peor a mejor nota.
 - **Pregunta clave:** ¿dónde pierde más puntos? ¿Inventa, se le escapan, parte o fusiona?
 - **Resultado:** una lista ordenada de los 2–3 problemas más gordos. Esa lista decide el paso 3.
 

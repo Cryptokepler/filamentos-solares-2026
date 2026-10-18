@@ -35,10 +35,11 @@ Los datos no se incluyen en el repositorio.
 cd visor && python3 build_visor.py ../MAGFiLO_1.0_Kaggle_2026
 cd .. && python3 -m http.server 8000   # abrir http://localhost:8000/visor/
 ```
+Para ver lo que predice la red: descarga `predicciones_examen.json` del *Output* del notebook de Kaggle, ponlo en `visor/`, vuelve a ejecutar `build_visor.py` y elige **Examen de la red** en el visor (la red se dibuja con línea discontinua; tecla `R` para mostrarla u ocultarla).
 
 ## Entrenar el observador en Kaggle
 `notebooks/entrenar_observador.ipynb` lleva el código incrustado (se regenera con `python3 notebooks/generar_notebook.py`).
 1. En Kaggle: *Create → New Notebook → File → Import Notebook* y subir el `.ipynb`.
 2. *Add Input*: la competición `filament-segmentation-2026`.
 3. *Settings*: Accelerator **GPU T4 x2** o **P100**, Internet **On**.
-4. *Run All*. Imprime la PQ de validación y deja `submission.csv` en *Output* (no se envía solo).
+4. *Save Version → Save & Run All*. Imprime la PQ de validación y deja en *Output* `predicciones_examen.json` y `submission.csv` (no se envía solo).

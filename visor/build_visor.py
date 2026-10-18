@@ -2,6 +2,9 @@
 
 Uso (desde la carpeta visor/):
     python3 build_visor.py ../MAGFiLO_1.0_Kaggle_2026
+
+Si junto a este script hay un predicciones_examen.json (lo genera el notebook de
+entrenamiento), sus predicciones se añaden a las imágenes del examen.
 """
 import json
 import os
@@ -40,10 +43,20 @@ def main(raiz):
             })
         imagenes[nombre].append({"id": reg["id"].split("-")[0], "f": filamentos})
 
+    examen = {}
+    if os.path.exists("predicciones_examen.json"):
+        with open("predicciones_examen.json") as f:
+            examen = json.load(f)["imagenes"]
+
     train = []
     for nombre in sorted(imagenes):
         regs = sorted(imagenes[nombre], key=lambda r: r["id"])
-        train.append({"n": nombre, "r": regs})
+        item = {"n": nombre, "r": regs}
+        if nombre in examen:
+            e = examen[nombre]
+            item["red"] = {"pq": e["pq"], "tp": e["tp"], "fp": e["fp"], "fn": e["fn"],
+                           "f": [{"a": x["a"], "p": x["p"]} for x in e["f"]]}
+        train.append(item)
 
     test_dir = os.path.join(raiz, "test", "test_images")
     test = sorted(x for x in os.listdir(test_dir) if x.lower().endswith((".jpeg", ".jpg")))
@@ -62,6 +75,8 @@ def main(raiz):
 
     n_fil = sum(len(r["f"]) for img in train for r in img["r"])
     print(f"data.js listo: {len(train)} imágenes train, {len(test)} test, {n_fil} filamentos anotados")
+    if examen:
+        print(f"Predicciones de la red en {len(examen)} imágenes del examen")
 
 
 if __name__ == "__main__":

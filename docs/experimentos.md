@@ -1,6 +1,6 @@
 # Diario de experimentos
 
-Un cambio por experimento. Nota = PQ en las ~100 imágenes de examen (validación fija). Ver [roadmap](roadmap-entrenamiento.md).
+Un cambio por experimento. Nota = PQ en las 121 imágenes de examen (validación fija). Ver [roadmap](roadmap-entrenamiento.md).
 
 | # | Fecha | Qué se cambió | PQ examen | TP / FP / FN | Partidos / fusionados | Qué se vio |
 |---|---|---|---|---|---|---|

@@ -184,6 +184,29 @@ MEJOR_POST = max(resultados, key=lambda t: t[0])[1]
 print('Mejor post-proceso:', MEJOR_POST, 'PQ', round(max(resultados, key=lambda t: t[0])[0], 4))
 """)
 
+md("""
+## Predicciones del examen para el visor
+Guarda `predicciones_examen.json` en *Output*: lo que la red ve en cada imagen de validación, con su PQ.
+Se descarga y se pone en `visor/` para compararlo con los dibujos de los expertos.
+""")
+code("""
+from filamentos.datos import mascara_a_poligonos
+examen = {}
+for n in val:
+    pred = O.a_instancias(probs[n], cache[n][1], **MEJOR_POST)
+    res = Resultado()
+    for anns in ANOT[n].values():
+        res += evaluar_imagen(mascaras_de(anns), pred)
+    examen[n] = {'pq': round(res.pq, 3), 'tp': res.tp, 'fp': res.fp, 'fn': res.fn,
+                 'f': [{'a': int(m.sum()), 'p': mascara_a_poligonos(m)} for m in pred]}
+with open('predicciones_examen.json', 'w') as fh:
+    json.dump({'post': MEJOR_POST, 'imagenes': examen}, fh, separators=(',', ':'))
+peores = sorted(examen.items(), key=lambda t: t[1]['pq'])[:10]
+print('Las 10 imágenes del examen donde peor lo hace:')
+for n, e in peores:
+    print(f"  {n}: PQ {e['pq']:.2f}  (aciertos {e['tp']}, inventados {e['fp']}, se le escapan {e['fn']})")
+""")
+
 md("## Predicción del test y `submission.csv`\nEl archivo se genera pero **no se envía**.")
 code("""
 import csv

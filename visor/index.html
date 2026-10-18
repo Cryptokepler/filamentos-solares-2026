@@ -44,7 +44,7 @@
   <header>
     <h1>☀️ Visor de filamentos</h1>
     <div class="row">
-      <select id="split"><option value="train">Entrenamiento</option><option value="test">Test</option></select>
+      <select id="split"><option value="train">Entrenamiento</option><option value="examen">Examen de la red</option><option value="test">Test</option></select>
       <select id="filtroAnot" title="Número de anotadores">
         <option value="0">Todos</option><option value="1">1 anotador</option><option value="2">2 anotadores</option><option value="3">3 anotadores</option>
       </select>
@@ -59,7 +59,7 @@
   <div id="lista"></div>
   <div id="ayuda">
     <kbd>←</kbd><kbd>→</kbd> imagen · <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> anotador · <kbd>A</kbd> todos<br>
-    <kbd>H</kbd> ocultar máscaras · <kbd>S</kbd> espinas · <kbd>0</kbd> reencuadrar<br>
+    <kbd>H</kbd> ocultar máscaras · <kbd>S</kbd> espinas · <kbd>R</kbd> red · <kbd>0</kbd> reencuadrar<br>
     Rueda = zoom · arrastrar = mover
   </div>
 </aside>
@@ -76,6 +76,7 @@
     <label>Relleno <input id="opacidad" type="range" min="0" max="80" value="30"></label>
     <label><input id="verEspinas" type="checkbox"> Espinas</label>
     <label><input id="verMascaras" type="checkbox" checked> Máscaras</label>
+    <label id="etqRed" style="color:#ff3dff"><input id="verRed" type="checkbox" checked> Red</label>
     <label>Contraste <input id="contraste" type="range" min="50" max="300" value="100"></label>
     <div class="leyenda" id="leyenda"></div>
   </div>
@@ -91,6 +92,7 @@
 const D = window.DATA;
 const CAT_COLOR = { 1: "#4da3ff", 2: "#ff5d73", 3: "#f5d547", 4: "#b48cff" };
 const ANOT_COLOR = ["#00e5a0", "#ff7a3d", "#4da3ff"];
+const COLOR_RED = "#ff3dff";
 const $ = id => document.getElementById(id);
 const cv = $("cv"), ctx = cv.getContext("2d");
 
@@ -100,7 +102,8 @@ const estado = {
 };
 
 // ---------- lista y filtros ----------
-function nombreDe(item) { return estado.split === "train" ? item.n : item; }
+function conAnot() { return estado.split !== "test"; }
+function nombreDe(item) { return conAnot() ? item.n : item; }
 function obsDe(n) { return n[14]; }
 function anioDe(n) { return n.slice(0, 4); }
 
@@ -116,23 +119,25 @@ function filtrar() {
   estado.split = $("split").value;
   const fa = +$("filtroAnot").value, fo = $("filtroObs").value, fy = $("filtroAnio").value;
   const q = $("buscar").value.trim();
-  const base = estado.split === "train" ? D.train : D.test;
+  const base = estado.split === "test" ? D.test
+    : estado.split === "examen" ? D.train.filter(i => i.red).sort((a, b) => a.red.pq - b.red.pq) : D.train;
   estado.items = base.filter(it => {
     const n = nombreDe(it);
     if (fo && obsDe(n) !== fo) return false;
     if (fy && anioDe(n) !== fy) return false;
     if (q && !n.includes(q)) return false;
-    if (fa && estado.split === "train" && it.r.length !== fa) return false;
+    if (fa && conAnot() && it.r.length !== fa) return false;
     return true;
   });
-  $("filtroAnot").disabled = estado.split !== "train";
-  $("conteo").textContent = estado.items.length + " imágenes";
+  $("filtroAnot").disabled = !conAnot();
+  $("conteo").textContent = estado.items.length + " imágenes" + (estado.split === "examen" ? " (de peor a mejor nota de la red)" : "");
+  if (estado.split === "examen" && !base.length) $("conteo").textContent = "No hay predicciones: pon predicciones_examen.json en visor/ y vuelve a ejecutar build_visor.py";
   const lista = $("lista");
   lista.innerHTML = "";
   estado.items.forEach((it, i) => {
     const d = document.createElement("div");
     const n = nombreDe(it);
-    d.innerHTML = `<span>${n.replace(".jpeg", "")}</span><span>${estado.split === "train" ? it.r.map(r => r.f.length).join(" / ") : ""}</span>`;
+    d.innerHTML = `<span>${n.replace(".jpeg", "")}</span><span>${estado.split === "examen" ? "PQ " + it.red.pq.toFixed(2) : conAnot() ? it.r.map(r => r.f.length).join(" / ") : ""}</span>`;
     d.onclick = () => cargar(i);
     lista.appendChild(d);
   });
@@ -147,18 +152,18 @@ function cargar(i) {
   $("lista").children[estado.idx]?.scrollIntoView({ block: "nearest" });
   const it = estado.items[estado.idx];
   const n = nombreDe(it);
-  const dir = estado.split === "train" ? D.train_dir : D.test_dir;
+  const dir = conAnot() ? D.train_dir : D.test_dir;
   const img = new Image();
   img.onload = () => { estado.img = img; reencuadrar(); };
   img.onerror = () => { $("info").innerHTML = "No se pudo abrir " + dir + "/" + n; };
   img.src = dir + "/" + n;
   estado.anot = "todos";
   pintarChips();
-  estado.acuerdo = estado.split === "train" && it.r.length > 1 ? calcularAcuerdo(it.r) : null;
+  estado.acuerdo = conAnot() && it.r.length > 1 ? calcularAcuerdo(it.r) : null;
 }
 
 function registrosVisibles() {
-  if (estado.split !== "train") return [];
+  if (!conAnot()) return [];
   const regs = estado.items[estado.idx].r.map((r, k) => ({ ...r, k }));
   if (estado.anot === "todos") return regs;
   return regs.filter(r => r.k === estado.anot);
@@ -167,7 +172,7 @@ function registrosVisibles() {
 function pintarChips() {
   const cont = $("anotadores");
   cont.innerHTML = "";
-  if (estado.split !== "train") return;
+  if (!conAnot()) return;
   const regs = estado.items[estado.idx].r;
   const opciones = regs.length > 1 ? ["todos", ...regs.map((_, k) => k)] : [0];
   if (regs.length === 1) estado.anot = 0;
@@ -235,6 +240,21 @@ function dibujar() {
       });
     }
   }
+  const red = conAnot() && estado.items[estado.idx].red;
+  if (red && $("verRed").checked) {
+    red.f.forEach((fil, j) => {
+      const path = new Path2D();
+      for (const poly of fil.p) {
+        path.moveTo(poly[0], poly[1]);
+        for (let k = 2; k < poly.length; k += 2) path.lineTo(poly[k], poly[k + 1]);
+        path.closePath();
+      }
+      const resaltado = estado.hover && estado.hover.fil === fil;
+      ctx.strokeStyle = COLOR_RED; ctx.lineWidth = (resaltado ? 3.5 : 2) / estado.zoom;
+      ctx.setLineDash([6 / estado.zoom, 4 / estado.zoom]); ctx.stroke(path); ctx.setLineDash([]);
+      estado.paths.push({ path, fil, reg: { k: "red" }, j });
+    });
+  }
   pintarInfo();
   pintarLeyenda();
 }
@@ -250,7 +270,8 @@ function pintarInfo() {
   const it = estado.items[estado.idx];
   const n = nombreDe(it);
   let h = `<b>${n}</b> · observatorio ${obsDe(n)} · ${n.slice(0, 4)}-${n.slice(4, 6)}-${n.slice(6, 8)} ${n.slice(8, 10)}:${n.slice(10, 12)}<br>`;
-  if (estado.split === "train") {
+  if (conAnot()) {
+    if (it.red) h += `<span style="color:${COLOR_RED}">Red (línea discontinua): ${it.red.f.length} filamentos · PQ <b>${it.red.pq.toFixed(2)}</b> · aciertos ${it.red.tp}, inventados ${it.red.fp}, se le escapan ${it.red.fn}</span><br>`;
     h += `${it.r.length} anotador(es): ${it.r.map(r => r.f.length).join(" / ")} filamentos`;
     if (estado.acuerdo) h += `<br>Acuerdo entre anotadores (PQ aprox.): ${estado.acuerdo.map(a => `${a.par} → <b>${a.pq.toFixed(2)}</b>`).join(" · ")}`;
   } else h += "Imagen de test (sin anotaciones)";
@@ -307,7 +328,8 @@ $("lienzo").addEventListener("mousemove", e => {
   const tip = $("tip");
   if (hit) {
     tip.style.display = "block"; tip.style.left = (e.clientX - r.left + 14) + "px"; tip.style.top = (e.clientY - r.top + 14) + "px";
-    tip.innerHTML = `Anotador ${hit.reg.k + 1} · filamento ${hit.j + 1}<br>${D.categorias[hit.fil.c]} · ${hit.fil.a.toLocaleString()} px`;
+    tip.innerHTML = hit.reg.k === "red" ? `Red · filamento ${hit.j + 1}<br>${hit.fil.a.toLocaleString()} px`
+      : `Anotador ${hit.reg.k + 1} · filamento ${hit.j + 1}<br>${D.categorias[hit.fil.c]} · ${hit.fil.a.toLocaleString()} px`;
   } else tip.style.display = "none";
   if ((hit && hit.fil) !== (estado.hover && estado.hover.fil)) { estado.hover = hit; dibujar(); }
 });
@@ -321,17 +343,18 @@ $("lienzo").addEventListener("wheel", e => {
 
 addEventListener("keydown", e => {
   if (e.target.tagName === "INPUT" && e.target.type === "text") return;
-  const regs = estado.split === "train" ? estado.items[estado.idx].r : [];
+  const regs = conAnot() ? estado.items[estado.idx].r : [];
   if (e.key === "ArrowRight" || e.key === "ArrowDown") { cargar(estado.idx + 1); e.preventDefault(); }
   else if (e.key === "ArrowLeft" || e.key === "ArrowUp") { cargar(estado.idx - 1); e.preventDefault(); }
   else if (["1", "2", "3"].includes(e.key) && +e.key <= regs.length) { estado.anot = +e.key - 1; pintarChips(); dibujar(); }
   else if (e.key.toLowerCase() === "a" && regs.length > 1) { estado.anot = "todos"; pintarChips(); dibujar(); }
   else if (e.key.toLowerCase() === "h") { $("verMascaras").checked = !$("verMascaras").checked; dibujar(); }
+  else if (e.key.toLowerCase() === "r") { $("verRed").checked = !$("verRed").checked; dibujar(); }
   else if (e.key.toLowerCase() === "s") { $("verEspinas").checked = !$("verEspinas").checked; dibujar(); }
   else if (e.key === "0") reencuadrar();
 });
 
-for (const id of ["modoColor", "opacidad", "verEspinas", "verMascaras", "contraste"]) $(id).addEventListener("input", dibujar);
+for (const id of ["modoColor", "opacidad", "verEspinas", "verMascaras", "verRed", "contraste"]) $(id).addEventListener("input", dibujar);
 for (const id of ["split", "filtroAnot", "filtroObs", "filtroAnio"]) $(id).addEventListener("change", filtrar);
 $("buscar").addEventListener("input", filtrar);
 addEventListener("resize", redimensionar);

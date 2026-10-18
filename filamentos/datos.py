@@ -42,5 +42,20 @@ def mascara_a_rle(mascara):
     return rle["counts"].decode("ascii")
 
 
+def mascara_a_poligonos(mascara, tolerancia=1.0):
+    """Contornos de una máscara como listas [x0, y0, x1, y1, ...] (formato COCO), para el visor."""
+    from scipy import ndimage as ndi
+    from skimage import measure
+
+    ys, xs = ndi.find_objects(mascara.astype(np.uint8))[0]
+    local = np.pad(mascara[ys, xs], 1)
+    poligonos = []
+    for c in measure.find_contours(local.astype(np.uint8), 0.5):
+        c = measure.approximate_polygon(c, tolerancia)
+        if len(c) >= 3:
+            poligonos.append([round(float(v), 1) for y, x in c for v in (x + xs.start - 1, y + ys.start - 1)])
+    return poligonos
+
+
 def rle_a_mascara(counts, alto=TAM, ancho=TAM):
     return mask_utils.decode({"size": [alto, ancho], "counts": counts.encode("ascii")}).astype(bool)
