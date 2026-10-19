@@ -22,6 +22,21 @@ Decidido con jhonatan el 19 oct 2026, después de desgranar la ronda 2. La caden
 | Juez | Ganó la confianza 0,8, que era el tope de lo probado. Solo miraba seguridad, tamaño, borde y solapes. | **Prueba la confianza hasta 0,9.** Añade la **regla 4**: si su punto más oscuro baja del 44 % del brillo del fondo, es mancha solar. Añade la **regla 5**: más de 10 veces más largo que ancho es un hilo, no un filamento. Cada regla se usa solo si sube la nota del examen. | Así piensa un anotador: oscuro a medias y alargado, no negrísimo ni un hilo. Ataca los 393 inventados. Comprobado en 64 filamentos de expertos: la regla 4 no quita ninguno y la regla 5 quita 2 (3 %). |
 | Refinador | El mejor umbral fue 0,5, que era el mínimo probado. | **Prueba también 0,3 y 0,4.** El entrenamiento no cambia (10 vueltas). | jhonatan prefiere no complicar más la cadena: el refinador sigue haciendo su trabajo. |
 
+**Resultado esperado (estimación antes de ver el resultado, 19 oct 2026).** Son estimaciones razonadas, no promesas. Sirven para comparar después y aprender si acertamos en la causa.
+
+| Cambio | Nota de referencia en la ronda 2 | Esperado en la ronda 3 | Razonamiento |
+|---|---|---|---|
+| Detector hasta la meseta (examen con confianza 0,6) | 0,370 | **0,38–0,40** | La curva fue 0,300 → 0,344 → 0,345 → 0,353 → 0,364 → 0,370, subiendo ~0,01 cada 2 vueltas al final. Parte de esa subida vino de achicar el paso en las vueltas 9 y 11, así que la meseta debería llegar algo más arriba, pero cada vez sube menos. |
+| Detector con el mejor juez básico (confianza hasta 0,9) | 0,391 | **0,40–0,42** | Lo que mejore el detector, más quizás +0,005 por probar una confianza más alta. |
+| + Reglas 4 y 5 | — | **+0,000 a +0,010** | Atacan solo los inventados (393). La regla 4 seguramente casi no actúa, porque el detector propone pocas manchas solares. La regla 5 quita algunos hilos falsos, pero también algún filamento real. Si no ayudan, el notebook no las usa. |
+| + Refinador (umbral desde 0,3) | 0,445 | **0,45–0,48** (centro ~0,46) | En la ronda 2 el refinador sumó +0,054. Esperamos algo parecido sobre un detector mejor. |
+| Kaggle público (si se envía) | 0,34 (ronda 1) | **~0,41–0,44** | El examen local sale ~0,04 más alto que Kaggle. |
+
+**Cómo leer el resultado.**
+- Si el detector solo apenas sube (menos de +0,005), el problema no era cuánto estudiaba, sino qué ve. Habría que ir a la lupa de contraste.
+- Si la meseta llega muy pronto (antes de la vuelta 20), la ronda 2 ya estaba casi en su techo.
+- Lo que más falla, los filamentos débiles y pequeños que se escapan (592), no debería cambiar mucho en esta ronda. No es lo que ataca.
+
 **Cómo sabremos qué ayudó.** El notebook mide cada filtro por separado. Primero da la nota del detector con el juez básico, que es comparable con el 0,391 de la ronda 2. Luego da lo que suman las reglas 4 y 5. Al final da lo que añade el refinador, que es comparable con el 0,445.
 
 **Descartado por ahora.** Partir el juez en dos (portero antes y juez final después del refinador), porque complica sin una ganancia clara. Dejar que el refinador estudie hasta la meseta. Para la ronda 4 quedan la "lupa de contraste" (para los débiles, la mayor bolsa de fallos), el juez que aprende de los expertos y el magnetograma (datos externos).
