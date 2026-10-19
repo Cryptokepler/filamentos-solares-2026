@@ -29,6 +29,9 @@ md("""
 2. **Refinador** (U-Net pequeña): redibuja el borde de cada filamento en un recorte de la imagen original de 2048 px.
 3. **Juez**: confianza mínima, unir detecciones que se pisan, tamaño mínimo y borde del Sol, elegidos en el examen fijo.
 
+**Ronda 3:** el detector ya no estudia un número fijo de vueltas, sino hasta que la nota del examen se aplana
+(meseta): en la primera meseta achica el paso de aprendizaje y en la segunda se para.
+
 Se mide con la **PQ oficial** en el mismo examen de 121 imágenes que la ronda 1 (0,384), así que las cifras
 son comparables. Incluye el informe de errores y las predicciones para el visor.
 Genera `submission.csv` pero **no envía nada a la competición.**
@@ -43,17 +46,23 @@ PRUEBA_RAPIDA = False
 
 RES = 1024            # resolución del detector (la original es 2048)
 PREENTRENADO = True   # Mask R-CNN preentrenado en COCO (necesita Internet en Kaggle)
-EPOCAS_DET = 12
+# Ronda 3: el detector estudia hasta que la nota se aplana (meseta), no un número fijo de vueltas
+EPOCAS_MAX = 40       # tope de seguridad
 LOTE_DET = 2
 LR_DET = 0.005
-EXAMEN_CADA = 2
+EXAMEN_CADA = 2       # examen cada 2 vueltas
+PACIENCIA = 3         # exámenes seguidos sin mejorar para declarar meseta
+MEJORA_MIN = 0.005    # lo mínimo que cuenta como mejora de PQ
+ACHIQUES = 1          # en la 1.ª meseta se achica el paso (x0,1); en la siguiente se para
+HORAS_MAX_DET = 6.5   # deja tiempo de sobra para juez, refinador y test dentro del límite de 12 h
 EPOCAS_REF = 10
 LOTE_REF = 16
 LR_REF = 3e-4
 SEMILLA = 42
 
 if PRUEBA_RAPIDA:
-    RES, PREENTRENADO, EPOCAS_DET, EXAMEN_CADA, EPOCAS_REF = 256, False, 1, 1, 1
+    RES, PREENTRENADO, EPOCAS_MAX, EXAMEN_CADA, EPOCAS_REF = 256, False, 4, 1, 1
+    PACIENCIA, MEJORA_MIN = 1, 1.0  # fuerza una meseta enseguida para probar achique y parada
 """)
 
 code("""
@@ -163,13 +172,13 @@ code("""
 det = D.construir_detector(PREENTRENADO, RES).to(disp)
 params = [p for p in det.parameters() if p.requires_grad]
 opt = torch.optim.SGD(params, lr=LR_DET, momentum=0.9, weight_decay=1e-4)
-sched = torch.optim.lr_scheduler.MultiStepLR(opt, [max(1, round(EPOCAS_DET * 0.7)), max(2, round(EPOCAS_DET * 0.9))], 0.1)
 escalador = torch.amp.GradScaler(enabled=disp == 'cuda')
 dl = torch.utils.data.DataLoader(D.DatosDetector(ejemplos_tr, RES, aumentar=True), batch_size=LOTE_DET,
                                  shuffle=True, num_workers=2, collate_fn=D.juntar)
 
 mejor, historia = -1, []
-for epoca in range(1, EPOCAS_DET + 1):
+sin_mejora, achiques, t_det = 0, 0, time.time()
+for epoca in range(1, EPOCAS_MAX + 1):
     det.train(); t = time.time(); suma = 0
     for imgs, objs in dl:
         imgs = [i.to(disp) for i in imgs]
@@ -178,17 +187,43 @@ for epoca in range(1, EPOCAS_DET + 1):
             l = sum(det(imgs, objs).values())
         opt.zero_grad(); escalador.scale(l).backward(); escalador.step(opt); escalador.update()
         suma += l.item()
-    sched.step()
-    linea = f'época {epoca}: pérdida {suma / len(dl):.4f} ({time.time() - t:.0f} s)'
-    if epoca % EXAMEN_CADA == 0 or epoca == EPOCAS_DET:
+    linea = f'vuelta {epoca}: pérdida {suma / len(dl):.4f} ({time.time() - t:.0f} s, paso {opt.param_groups[0]["lr"]:g})'
+    parar = False
+    if epoca % EXAMEN_CADA == 0:
         crudas = detectar_examen(det)
         res = pq_examen({n: juez(crudas, n, umbral=0.6) for n in val})
-        historia.append((epoca, res.pq))
+        historia.append((epoca, round(res.pq, 4)))
         linea += ' | ' + resumen(res)
         if res.pq > mejor:
+            if res.pq >= mejor + MEJORA_MIN:
+                sin_mejora = 0
+            else:
+                sin_mejora += 1  # mejora demasiado pequeña: se guarda, pero cuenta para la meseta
             mejor = res.pq
             torch.save(det.state_dict(), 'detector_mejor.pt')
+            linea += ' | guardado'
+        else:
+            sin_mejora += 1
+        linea += f' | sin mejora {sin_mejora}/{PACIENCIA}'
+        if sin_mejora >= PACIENCIA:
+            if achiques < ACHIQUES:
+                achiques += 1; sin_mejora = 0
+                for g in opt.param_groups:
+                    g['lr'] *= 0.1
+                linea += ' | MESETA: achico el paso x0,1'
+            else:
+                linea += ' | MESETA otra vez: paro'
+                parar = True
+    if time.time() - t_det > HORAS_MAX_DET * 3600:
+        linea += ' | tope de tiempo: paro'
+        parar = True
     print(linea, flush=True)
+    if parar:
+        break
+if not os.path.exists('detector_mejor.pt'):
+    torch.save(det.state_dict(), 'detector_mejor.pt')
+print('Curva (vuelta, PQ):', historia)
+print(f'Entrenamiento del detector: {epoca} vueltas en {(time.time() - t_det) / 60:.0f} min')
 print('Mejor PQ del detector (confianza 0,6):', round(mejor, 4))
 """)
 
@@ -197,7 +232,7 @@ code("""
 det.load_state_dict(torch.load('detector_mejor.pt', map_location=disp))
 crudas = detectar_examen(det)
 resultados = []
-for umbral in (0.3, 0.4, 0.5, 0.6, 0.7, 0.8):
+for umbral in (0.5, 0.6, 0.7, 0.8, 0.85, 0.9):  # ronda 2 ganó en 0,8, el borde de la rejilla
     for fusionar in (True, False):
         for area_min in (0, 330):
             post = dict(umbral=umbral, fusionar=fusionar, area_min=area_min)
@@ -247,7 +282,7 @@ def gris2048(n, carpeta='train/train_images'):
 
 USAR_REF, UMBRAL_REF, PQ_FINAL = False, None, PQ_DET
 print('Detector solo:', resumen(pq_examen(pred_det)))
-for umbral_ref in (0.5, 0.7, 0.85):
+for umbral_ref in (0.3, 0.4, 0.5):  # ronda 2 ganó en 0,5, el borde de la rejilla
     pred_ref = {}
     for n in val:
         with torch.autocast(disp, enabled=disp == 'cuda'):
