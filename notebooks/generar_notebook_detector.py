@@ -30,7 +30,8 @@ md("""
 3. **Juez**: confianza mínima, unir detecciones que se pisan, tamaño mínimo y borde del Sol, elegidos en el examen fijo.
 
 **Ronda 3:** el detector ya no estudia un número fijo de vueltas, sino hasta que la nota del examen se aplana
-(meseta): en la primera meseta achica el paso de aprendizaje y en la segunda se para.
+(meseta): en la primera meseta achica el paso de aprendizaje y en la segunda se para. El juez prueba además
+las reglas 4 (lo negrísimo es mancha solar) y 5 (hilos de más de 10:1) y solo las usa si suben la nota.
 
 Se mide con la **PQ oficial** en el mismo examen de 121 imágenes que la ronda 1 (0,384), así que las cifras
 son comparables. Incluye el informe de errores y las predicciones para el visor.
@@ -134,6 +135,8 @@ t = time.time()
 with Pool(os.cpu_count()) as p:
     cache = dict(zip(tr + val, p.map(cargar, tr + val)))
 ejemplos_tr = [(cache[n][0], anns) for n in tr for anns in ANOT[n].values()]
+# Brillo relativo al fondo local de las imágenes del examen, para las reglas 4 y 5 del juez
+rel_val = {n: D.brillo_relativo(*cache[n]) for n in val}
 print(f'{len(ejemplos_tr)} ejemplos de estudio (imagen x experto), cargados en {time.time() - t:.0f} s')
 
 # Filamentos de los expertos en el examen, a 2048 y comprimidos (RLE) para no llenar la memoria
@@ -164,7 +167,7 @@ def detectar_examen(modelo):
 def juez(crudas, n, **post):
     rles, conf = crudas[n]
     m = np.stack([mask_utils.decode(r).astype(bool) for r in rles]) if rles else np.zeros((0, RES, RES), bool)
-    return D.instancias(m, conf, cache[n][1], **post)
+    return D.instancias(m, conf, cache[n][1], rel=rel_val[n], **post)
 """)
 
 md("## Entrenamiento del detector")
@@ -240,6 +243,18 @@ for umbral in (0.5, 0.6, 0.7, 0.8, 0.85, 0.9):  # ronda 2 ganó en 0,8, el borde
             resultados.append((res.pq, post))
             print(post, '->', resumen(res), flush=True)
 PQ_DET, MEJOR_POST = max(resultados, key=lambda t: t[0])
+print('Mejor juez básico:', MEJOR_POST, 'PQ', round(PQ_DET, 4))
+
+# Reglas de jhonatan sobre el mejor juez básico (medidas en 100 imágenes de estudio, reglas-filamentos.md):
+#   regla 4: si su punto más oscuro baja del 44 % del brillo del fondo, es mancha solar (0 % dibujadas)
+#   regla 5: más de 10 veces más largo que ancho es un hilo, no un filamento (solo 4 % dibujadas)
+base = dict(MEJOR_POST)
+for reglas in (dict(oscuro_min=0.44), dict(alarg_max=10), dict(oscuro_min=0.44, alarg_max=10)):
+    post = {**base, **reglas}
+    res = pq_examen({n: juez(crudas, n, **post) for n in val})
+    print('+', reglas, '->', resumen(res), flush=True)
+    if res.pq > PQ_DET:
+        PQ_DET, MEJOR_POST = res.pq, post
 print('Mejor juez:', MEJOR_POST, 'PQ', round(PQ_DET, 4))
 pred_det = {n: juez(crudas, n, **MEJOR_POST) for n in val}
 """)
@@ -370,7 +385,8 @@ for f in (sorted(os.listdir(test_dir)) if os.path.isdir(test_dir) else []):
     img = np.asarray(Image.fromarray(grande).resize((RES, RES), Image.BILINEAR), np.uint8)
     with torch.autocast(disp, enabled=disp == 'cuda'):
         m, c = D.detectar(det, img, disp)
-        pred = D.instancias(m, c, radio(img), **MEJOR_POST)
+        rr = radio(img)
+        pred = D.instancias(m, c, rr, rel=D.brillo_relativo(img, rr), **MEJOR_POST)
         if USAR_REF:
             pred = D.refinar(ref, grande, pred, disp, umbral=UMBRAL_REF)
     img_id = os.path.splitext(f)[0]

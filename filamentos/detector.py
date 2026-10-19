@@ -143,12 +143,42 @@ def a_2048(m):
     return np.asarray(Image.fromarray(m.astype(np.float32)).resize((TAM, TAM), Image.BILINEAR)) > 0.5
 
 
-def instancias(mascaras, conf, r, umbral=0.6, fusionar=True, area_min=0, radio_max=0.95):
+def brillo_relativo(img, r):
+    """Brillo de cada píxel dividido por el fondo local (mediana en ventanas de ~100 px a 2048).
+
+    Mismo cálculo que el análisis de manchas (reglas 4 y 5): corrige el oscurecimiento hacia el
+    borde y la iluminación desigual. 1 = como el fondo; 0,5 = la mitad de brillante.
+    """
+    img = img.astype(np.float32)
+    dentro = r < 1
+    relleno = np.where(dentro, img, np.median(img[dentro]))
+    peque = np.asarray(Image.fromarray(relleno).resize((512, 512), Image.BILINEAR))
+    fondo = ndi.median_filter(peque, size=25)
+    fondo = np.asarray(Image.fromarray(fondo).resize(img.shape[::-1], Image.BILINEAR))
+    rel = img / np.maximum(fondo, 1)
+    rel[~dentro] = 1
+    return rel.astype(np.float16)
+
+
+def alargamiento(m):
+    """Eje mayor / eje menor de la elipse equivalente (como skimage regionprops)."""
+    ys, xs = np.nonzero(m)
+    if len(xs) < 3:
+        return 1.0
+    l = np.linalg.eigvalsh(np.cov(np.stack([xs, ys]).astype(np.float64)))
+    return float(np.sqrt(max(l[1], 1e-9) / max(l[0], 1e-9)))
+
+
+def instancias(mascaras, conf, r, umbral=0.6, fusionar=True, area_min=0, radio_max=0.95,
+               rel=None, oscuro_min=None, alarg_max=None):
     """Detecciones a [res,res] -> lista de máscaras a 2048 tras el juez.
 
     fusionar: las detecciones que se solapan se unen en un solo filamento (Mask R-CNN
     a veces propone el mismo filamento dos veces, o dos trozos de él).
     r: distancia al centro en radios a resolución res.
+    oscuro_min (regla 4): se descarta si su punto más oscuro baja de este brillo relativo
+        (rel = brillo_relativo); lo negrísimo suele ser una mancha solar.
+    alarg_max (regla 5): se descarta si es más alargado que esto (hilos larguísimos).
     """
     keep = conf >= umbral
     mascaras = mascaras[keep]
@@ -168,6 +198,10 @@ def instancias(mascaras, conf, r, umbral=0.6, fusionar=True, area_min=0, radio_m
     escala2 = (TAM / r.shape[0]) ** 2
     for m in mascaras:
         if m.sum() * escala2 < area_min or r[m].mean() > radio_max:
+            continue
+        if oscuro_min is not None and float(rel[m].min()) < oscuro_min:
+            continue
+        if alarg_max is not None and alargamiento(m) > alarg_max:
             continue
         out.append(a_2048(m))
     return out
