@@ -47,6 +47,47 @@ Comprobación con lo ya visto: lo que añadió el especialista de la ronda 4 ace
 - **Basura:** franjas que aciertan ≤ 10 %. Ningún juez razonable las subiría de 32. Fuera.
 - **Dudoso:** el resto. Va al tribunal.
 
+## Las rondas 3 y 4 medidas con la fórmula (20 oct 2026)
+
+**La fórmula.** Cada franja de candidatos tiene un % de acierto: aciertos que aporta / (aciertos + inventos que aporta). La franja suma nota si ese % supera el **umbral = PQ / (2·SQ)**. Las cifras salen de los logs de Kaggle (examen de 121 imágenes, uniendo solapes).
+
+**Ronda 3, detector general** (antes del refinador: PQ 0,389, SQ 0,640 → umbral **30 %**):
+
+| Franja de confianza | Aciertos que aporta | Inventos que aporta | % acierto | ¿Supera el 30 %? | Lo que pasó en la realidad |
+|---|---|---|---|---|---|
+| 0,9 o más | 793 | 426 | 65 % | Sí | Se usa |
+| 0,85-0,9 | 59 | 62 | 49 % | Sí | Quitarla bajaba la nota (0,380 → 0,369) |
+| 0,8-0,85 | 56 | 70 | 44 % | Sí | Quitarla bajaba la nota (0,389 → 0,380) |
+| 0,7-0,8 | 60 | 130 | 32 % | Raya | Añadirla dejaba la nota igual (0,389 → 0,387) |
+| 0,6-0,7 | 9 | 124 | 7 % | No | Añadirla bajaba la nota (0,387 → 0,370) |
+
+La fórmula explica sola por qué el mejor corte fue siempre 0,8: es justo donde el % de acierto cruza el umbral.
+
+**Ronda 4, especialista** (lo que añade sobre el general; umbral 30 %):
+
+| Franja de confianza | Aciertos | Inventos | % acierto | ¿Supera el 30 %? |
+|---|---|---|---|---|
+| 0,9 o más | 22 | 27 | 45 % | Sí |
+| 0,8-0,9 | 34 | 86 | 28 % | Raya |
+| 0,7-0,8 | 36 | 74 | 33 % | Raya |
+| 0,6-0,7 | 15 | 90 | 17 % | No |
+| 0,5-0,6 | 21 | 114 | 18 % | No |
+
+El especialista tenía muy poco por encima de la raya: solo su franja más alta (49 candidatos) sumaba de verdad. Por eso subió +0,004 antes del refinador y nada después.
+
+## Las perillas (lo que se ajusta)
+
+| Perilla | Qué controla | Valor inicial | Cómo se fija |
+|---|---|---|---|
+| Confianza mínima del detector | Cuánto dispara | 0,2 | Lo más baja posible sin que el tribunal se ahogue en basura |
+| Corte "obvio" | Qué pasa sin juicio | franja con ≥ 75 % de acierto | Tabla del paso 1 |
+| Corte "basura" | Qué se tira sin juicio | franja con ≤ 10 % de acierto | Tabla del paso 1 |
+| Pesos de los jueces A y B | Cuánto cuenta cada opinión | 50 / 50 | Calibración en el examen |
+| Umbral de aprobación | Sí o no | PQ / (2·SQ) ≈ 32 | Se recalcula solo cuando cambian PQ o SQ |
+| Umbral por tamaño (opcional) | Exigir más a los pequeños si se dibujan peor | igual para todos | Con el SQ medido por tamaño |
+
+**Lo importante:** una vez guardados los candidatos del paso 1, mover estas perillas **no gasta GPU**. Se prueban miles de combinaciones aquí en segundos, midiendo la nota del examen con cada una. Solo se vuelve a Kaggle con la combinación ganadora. (Ojo: probar muchas combinaciones en el mismo examen infla la nota. Se separa el examen en dos mitades: con una se ajusta y con la otra se comprueba.)
+
 ## Plan por pasos (uno a la vez, midiendo)
 
 1. **Medir** (solo predicción, ~30-40 min de GPU, sin entrenar). Pasar el detector de la ronda 3 en modo generoso por las imágenes del examen y guardar cada candidato con su ficha, su recorte y cuántos expertos lo dibujaron. Sale la tabla de acierto por franja de confianza y cuántos de los 547 escapados hay entre los candidatos.
