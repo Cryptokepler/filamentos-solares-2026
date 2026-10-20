@@ -149,6 +149,8 @@ Conclusión: en partir, unir y dibujar ya estamos al nivel de un experto frente 
 - **Confirma el hallazgo de la duda humana.** En los filamentos pequeños los expertos coinciden poco (menos de 330 px: 41 %). Muchos "inventados" del especialista son manchas que algún experto podría haber marcado y otro no. El límite no es la resolución (el ojo), sino a qué estilo de experto apuntamos.
 - **El examen de estudio ya lo avisaba:** general + especialista con confianza 0,6 nunca superó al general solo (0,389).
 
+**Envío a Kaggle (20 oct 2026).** Se envió el `submission.csv` de la ronda 3 (no el de la ronda 4, que no mejora): **público 0,38** frente a 0,34 de la ronda 1. En local la subida fue de 0,384 a 0,4405; Kaggle da unas 0,04-0,06 menos que nuestro examen, pero sube en la misma dirección.
+
 **Decisión pendiente con jhonatan.** No relanzar el especialista tal cual. Siguiente palanca candidata: elegir el estilo de experto (p. ej. entrenar con un solo experto por imagen) o un juez que aprenda qué pequeños marcan los expertos.
 
 ## Análisis sin GPU
