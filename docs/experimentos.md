@@ -130,6 +130,27 @@ La ronda 4 ataca la bolsa de pequeños. La bolsa más grande que queda son los "
 
 Conclusión: en partir, unir y dibujar ya estamos al nivel de un experto frente a otro. Arreglar los "casi" no llevaría a ~0,55; esa estimación se descarta.
 
+**Resultado real (20 oct 2026, versión 2 del notebook, 167 min de GPU) frente a lo esperado.** El kernel se cayó (falta de memoria, casi seguro) al probar el refinador con umbral 0,5, después de dar todas las cifras de abajo. Por eso no hay `submission.csv` ni JSON de predicciones; sí se guardó `especialista_mejor.pt`.
+
+| Etapa | Ronda 3 | Esperado | Real | ¿Acertamos? |
+|---|---|---|---|---|
+| General solo con su juez | 0,389 | 0,389 | **0,3887** (TP 771, FP 399, FN 596) | Sí: control correcto, los pesos se cargaron bien. |
+| + Especialista | — | 0,41-0,43 | **0,3931** (TP 859, FP 569, FN 508; su juez: confianza 0,7, unir, mínimo 330 px) | No. +0,004, dentro del ruido. |
+| + Refinador (umbral 0,4) | 0,4405 | 0,46-0,49 | **0,4391** (general solo + refinador: 0,4390) | No. El especialista no suma nada. |
+
+| Error de la ronda 3 | Esperado en la ronda 4 | Real (antes del refinador) |
+|---|---|---|
+| Se escapan (FN) | 596 → ~450 | 596 → **508** (recupera 88) |
+| Inventados (FP) | 399 → ~460 | 399 → **569** (+170) |
+
+**Lo que aprendimos.**
+- **La lupa sí ve más, pero ve de todo.** El especialista encontró 88 filamentos pequeños que el general no veía, pero por cada uno inventó unos dos. En PQ, un acierto con dos inventados al lado deja la nota igual.
+- **Estudiar más no lo afinó.** Su mejor examen fue en la vuelta 2 (0,382) y en la 14 seguía igual (0,385), aunque la pérdida bajaba (0,52 → 0,47). Aprendió a dibujar mejor lo que ya veía, no a distinguir lo real de lo que no.
+- **Confirma el hallazgo de la duda humana.** En los filamentos pequeños los expertos coinciden poco (menos de 330 px: 41 %). Muchos "inventados" del especialista son manchas que algún experto podría haber marcado y otro no. El límite no es la resolución (el ojo), sino a qué estilo de experto apuntamos.
+- **El examen de estudio ya lo avisaba:** general + especialista con confianza 0,6 nunca superó al general solo (0,389).
+
+**Decisión pendiente con jhonatan.** No relanzar el especialista tal cual. Siguiente palanca candidata: elegir el estilo de experto (p. ej. entrenar con un solo experto por imagen) o un juez que aprenda qué pequeños marcan los expertos.
+
 ## Análisis sin GPU
 
 - **La tabla pública de Kaggle está rota (20 oct 2026).** El notebook público "Please fix the Leaderboard" demuestra que enviar máscaras vacías puntúa entre 0,70 y 1,00. Los organizadores dicen en el foro que se toman "muy en serio" un 0,41 y que revisarán a mano todas las notas altas. Los participantes honestos del foro van por 0,40-0,46. Conclusión: la meta de "alcanzar al líder (0,64)" no vale; la brújula es nuestro examen local.
