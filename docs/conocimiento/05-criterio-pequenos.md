@@ -76,3 +76,37 @@ Investigado con fuentes enlazadas. Fuente principal: Ahmadzadeh et al. 2024, *Sc
 4. **Forma:** redondeado y pequeño = dudoso. Es el efecto más débil.
 
 **Ojo:** el detector probablemente ya ha aprendido parte de esto. En la ronda 3 encuentra solo el 33 % de los filamentos pálidos, y sus inventos puros son sobre todo de oscuridad media. Hay que medir cuánto añade un juez que use estos rasgos explícitamente. Las reglas a mano de la ronda 3 (reglas 4 y 5) no ayudaron.
+
+## 4. Prueba sin GPU con la ronda 3 (20 oct 2026)
+
+Scripts: `analisis/prueba_juez_criterio.py` (sobre `predicciones_examen.json` y `errores_examen.csv` de la ronda 3) y `analisis/oraculo_consenso.py`.
+
+**Quitar predicciones con los criterios no ayuda.** Base de la ronda 3: PQ 0,4405.
+
+| Se quitan las predicciones pequeñas (< 3.000 px) que son... | Aciertos que se pierden | Inventos que se quitan | PQ |
+|---|---|---|---|
+| pálidas (brillo > 0,95) | 13 | 13 | 0,4385 |
+| pálidas (> 0,93) | 59 | 46 | 0,4276 |
+| cerca del borde (radio > 0,8) | 37 | 48 | 0,4353 |
+| en grupo de pequeños | 103 | 36 | 0,4077 |
+| redondeadas (alargamiento < 2) | 44 | 16 | 0,4270 |
+| juez que aprende (árboles, validación cruzada por imagen, AUC 0,63) | 12-61 | 12-41 | 0,425-0,438 |
+
+- Ni siquiera las predicciones más dudosas de la ronda 3 fallan más de la mitad de las veces. Las pequeñas pálidas aciertan el 50 %, y las oscuras el 81 %.
+- **El detector ya aplica este criterio:** casi no propone pequeños pálidos (por eso solo encuentra el 33 % de los reales pálidos).
+
+**La economía de la nota PQ.** Cada predicción se compara con cada experto de la imagen. Con la calidad de borde actual (SQ 0,68) y la nota 0,44, una predicción solo compensa si acierta más de ~1 de cada 3 veces:
+- Por debajo de ese umbral resta, y conviene quitarla.
+- Por encima suma.
+- Lo que añadió el especialista de la ronda 4 acertaba el 34 %, justo en el umbral: por eso no cambió nada.
+
+**Techo con dibujos perfectos** (296 imágenes con 2-3 expertos; la nota está inflada porque el dibujo copiado coincide al 100 % con el experto de donde sale):
+
+| Estrategia | PQ |
+|---|---|
+| Copiar a un solo experto | 0,605 |
+| Marcar solo lo que dibujan todos | 0,487 |
+| Marcar lo que dibujan al menos 2 (mayoría) | 0,573 |
+| Marcar todo lo que dibuja cualquiera (unión) | **0,658** |
+
+Con esta métrica, **ser generoso paga más que ser estricto**: un filamento que marca un solo experto da un acierto pleno con él, y eso compensa los inventos frente a los demás. La conclusión no es quitar más, sino **encontrar más con al menos 1/3 de acierto y dibujarlos mejor** (cada +0,01 en SQ suma ~+0,0065 de PQ).
