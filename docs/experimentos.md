@@ -113,6 +113,23 @@ Si el especialista no cumple esa tabla (recupera pocos o inventa tantos como rec
 
 La ronda 4 ataca la bolsa de pequeños. La bolsa más grande que queda son los "casi" de los filamentos grandes (regla 6 de jhonatan).
 
+**Corrección tras mirar los "casi" uno por uno (20 oct 2026, `analisis/casi_ronda3.py` sobre `predicciones_examen.json` de la ronda 3).** La tabla anterior es demasiado optimista: muchos "casi" no son errores claros, sino casos donde los propios expertos discrepan. Cada filamento real se compara con cada experto (1.367 casos) y, como referencia, cada experto con otro experto en las imágenes con 2-3 expertos (1.190 casos):
+
+| Qué le pasa al filamento real | Ronda 3 | Experto contra experto |
+|---|---|---|
+| Acierto (IoU > 0,5) | 809 (59 %) | 564 (47 %) |
+| Escapado del todo | 313 (23 %) | 246 (21 %) |
+| Fusionado con otro en una sola predicción | 96 (7,0 %) | 80 (6,7 %) |
+| Mal dibujado (una sola predicción, IoU 0,1-0,5) | 132 (9,7 %) | 264 (22 %) |
+| Partido en varios trozos | 17 (1,2 %) | 36 (3,0 %) |
+
+- **Une más de lo que parte** (96 reales fusionados frente a 17 partidos), pero fusiona al mismo ritmo que un experto frente a otro, y parte y dibuja mal menos que ellos.
+- **42 predicciones unen varios reales** (2 de media, sobre todo de 3k-10k px). En 13 de las 26 que caen en imágenes con varios expertos, otro experto dibujó exactamente eso como un solo filamento: es la regla 6 (los expertos discrepan al partir y unir).
+- **Mal dibujados:** la mitad son más grandes que el real (68) y la otra mitad más pequeños (64). No hay un sesgo fijo que corregir.
+- Las cifras salen ligeramente distintas del notebook (809 aciertos frente a 820) porque las predicciones se guardaron como polígonos simplificados.
+
+Conclusión: en partir, unir y dibujar ya estamos al nivel de un experto frente a otro. Arreglar los "casi" no llevaría a ~0,55; esa estimación se descarta.
+
 ## Análisis sin GPU
 
 - **La tabla pública de Kaggle está rota (20 oct 2026).** El notebook público "Please fix the Leaderboard" demuestra que enviar máscaras vacías puntúa entre 0,70 y 1,00. Los organizadores dicen en el foro que se toman "muy en serio" un 0,41 y que revisarán a mano todas las notas altas. Los participantes honestos del foro van por 0,40-0,46. Conclusión: la meta de "alcanzar al líder (0,64)" no vale; la brújula es nuestro examen local.
