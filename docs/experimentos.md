@@ -57,8 +57,40 @@ Decidido con jhonatan el 19 oct 2026, después de desgranar la ronda 2. La caden
 
 **Descartado por ahora.** Partir el juez en dos (portero antes y juez final después del refinador), porque complica sin una ganancia clara. Dejar que el refinador estudie hasta la meseta. Para la ronda 4 quedan la "lupa de contraste" (para los débiles, la mayor bolsa de fallos), el juez que aprende de los expertos y el magnetograma (datos externos).
 
+## Ronda 4: qué corrige de la ronda 3 y qué añade
+
+Decidido con jhonatan el 20 oct 2026. Notebook nuevo `notebooks/entrenar_especialista.ipynb` (Kaggle `filamentos-ronda-4-especialista`). Idea de jhonatan: "un detector especialista en menos de 3000 px, así dividimos la carga", entrenado con la imagen a 2048 para "afinar muy bien el ojo" en lo que falla.
+
+**De dónde partimos (ronda 3, PQ 0,4405).** El detector general ya tocó techo (0,37 en el examen de estudio, igual en las rondas 2 y 3). Con los filamentos grandes (más de 3.000 px) va bien: ve el 90 % (71 % acertados y 18 % "casi") y solo 10 de sus 275 propuestas de ese tamaño son inventos puros, al nivel de experto contra experto. El problema son los pequeños: **467 de los 547 filamentos que se escapan miden menos de 3.000 px** (menos de 330 px: 24 % encontrados; 330-1k: 51 %; 1k-3k: 68 %).
+
+| Pieza | Ronda 3 | Ronda 4 | Por qué |
+|---|---|---|---|
+| Detector general | Entrenado hasta la meseta (vuelta 16 de 28) | **El mismo, sin volver a entrenarlo** (se cargan sus pesos) | Ya está en su techo; reentrenarlo gasta GPU sin ganar nada. |
+| Detector especialista | — | **Nuevo.** Mismo Mask R-CNN, pero mira la imagen original de **2048 px** por ventanas de 1024 (cada filamento se ve el doble de grande). Arranca de lo que aprendió el general. En cada vuelta, 8 de cada 10 ventanas de estudio se centran en un filamento pequeño. Ve todos los filamentos de la ventana, también trozos de los grandes. Estudia hasta la meseta como en la ronda 3 (tope 4,5 h). | Es "la lupa": a 1024 un filamento de 500 px queda en 125 px. Si le escondiéramos los grandes, aprendería que un trozo de filamento grande es fondo y se confundiría. En el examen y el test mira 9 ventanas solapadas; cada detección cuenta solo en la ventana que tiene su centro. |
+| Juez | Uno (confianza 0,8, unir solapes) | **Dos.** El del general, igual que en la ronda 3. El del especialista: solo deja pasar filamentos de menos de 3.000 px y prueba su propia confianza (0,5-0,9), unir o no, y tamaño mínimo. | Cada detector se equivoca distinto, cada uno con su juez. |
+| Juntar | — | Si más del 20 % de un filamento del especialista cae sobre uno del general, se descarta (gana el general). Si es menos, se le quitan esos píxeles. | El general es fiable en lo que ya ve; el especialista solo debe **añadir** lo que falta. |
+| Refinador | Entrenado 10 vueltas, umbral 0,5 | **El mismo, sin volver a entrenarlo**, sobre todo lo que pasa los jueces. Umbral 0,3-0,5. | No es lo que falla. |
+
+Revisado antes de decidir (20 oct): el notebook público del 0,70 usa el mismo detector que nosotros y no tiene especialista en pequeños. Su autor propone mirar a 2048 por trozos como siguiente paso.
+
+**Resultado esperado (estimación antes de ver el resultado, 20 oct 2026).**
+
+| Etapa | Ronda 3 | Esperado en la ronda 4 | Razonamiento |
+|---|---|---|---|
+| General solo con su juez | 0,389 (TP 771, FP 399, FN 596) | **0,389** | Es el mismo detector: sirve de control. Si sale distinto, algo está mal cargado. |
+| + Especialista | — | **0,41-0,43** | Si encuentra un tercio de los pequeños que se escapan (~150 aciertos más) con ~60 inventados nuevos: TP ~920, FP ~460, FN ~450, RQ 0,61 → 0,67. La forma (SQ) puede bajar un poco porque los pequeños se dibujan peor. |
+| + Refinador | 0,4405 | **0,46-0,49** (centro ~0,47) | En las rondas 2 y 3 el refinador sumó unos +0,05. |
+
+**Cómo leer el resultado.**
+- Si el especialista suma aciertos pero casi el mismo número de inventados, el juez del especialista lo dejará fuera (el notebook solo lo usa si sube la nota). Entonces los pequeños que faltan no se distinguen bien ni con lupa, y habría que ir a la lupa de contraste o al juez que aprende.
+- Si sube aciertos claramente, la siguiente palanca serían los "casi" grandes (partir y unir).
+- Ojo con el ruido: el examen salta ±0,015.
+
+**Cómo sabremos qué ayudó.** El notebook imprime la nota del general solo, la del general + especialista con cuántos aciertos e inventados añade el especialista, y la de cada combinación con el refinador.
+
 ## Análisis sin GPU
 
+- **La tabla pública de Kaggle está rota (20 oct 2026).** El notebook público "Please fix the Leaderboard" demuestra que enviar máscaras vacías puntúa entre 0,70 y 1,00. Los organizadores dicen en el foro que se toman "muy en serio" un 0,41 y que revisarán a mano todas las notas altas. Los participantes honestos del foro van por 0,40-0,46. Conclusión: la meta de "alcanzar al líder (0,64)" no vale; la brújula es nuestro examen local.
 - **¿Hace falta ver a 2048? (18 oct 2026).** Se encogen los dibujos de los expertos a menos píxeles y se reamplían a 2048 para medir la nota máxima posible por falta de nitidez (25 imágenes de muestra, 2.072 filamentos). Techo de PQ: 0,91 a 512 px, 0,98 a 1024 px y 1,00 a 1536 px. A 1024 no se pierde ningún filamento. Casi todos miden 9 px o más de grosor (mediana 16 px). Conclusión: la resolución no limita el **dibujo**. Queda por saber si limita **ver** los filamentos débiles; eso lo dirá el informe de errores.
 - **Notebooks públicos (19 oct 2026).** El bloque de 0,55 de la tabla sale de un notebook que reenvía un CSV ya calculado, sin modelo. El mejor método público honesto (LB 0,70, de Fususu, basado en el notebook de Nomannic19) es un detector Mask R-CNN a 1024 px más un refinador U-Net sobre recortes de cada filamento a 2048. Encaja con nuestro diagnóstico: lo que falla es decidir qué es filamento y partir o unir, no el borde. Decisión de jhonatan: pasar ya al detector (ronda 2 = `notebooks/entrenar_detector.ipynb`).
 - **Dibujar las máscaras a baja resolución con PIL las engorda (19 oct 2026).** Con máscaras de experto perfectas (15 imágenes), dibujarlas a 1024 con PIL y reampliarlas da PQ 0,82. Dibujarlas a 2048 con pycocotools, como la métrica oficial, y reducirlas da 0,89. La ronda 1 usó PIL para el objetivo, así que la U-Net aprendió bordes algo gruesos. El detector ya usa la forma buena.

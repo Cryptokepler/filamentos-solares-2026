@@ -88,23 +88,28 @@ class DatosDetector(torch.utils.data.Dataset):
 
     def __getitem__(self, i):
         img, anotaciones = self.ejemplos[i]
-        mascaras = mascaras_res(anotaciones, self.res)
-        img = img.astype(np.float32) / 255
-        m = np.stack(mascaras) if mascaras else np.zeros((0,) + img.shape, bool)
-        if self.aumentar:
-            k = np.random.randint(4)
-            img, m = np.rot90(img, k), np.rot90(m, k, (1, 2))
-            if np.random.rand() < 0.5:
-                img, m = img[:, ::-1], m[:, :, ::-1]
-            img = _fotometria(img.copy())
-        img, m = np.ascontiguousarray(img), np.ascontiguousarray(m)
-        cajas = np.zeros((len(m), 4), np.float32)
-        for j, mj in enumerate(m):
-            ys, xs = np.nonzero(mj)
-            cajas[j] = xs.min(), ys.min(), xs.max() + 1, ys.max() + 1
-        objetivo = {"boxes": torch.from_numpy(cajas), "labels": torch.ones(len(m), dtype=torch.int64),
-                    "masks": torch.from_numpy(m.astype(np.uint8))}
-        return torch.from_numpy(img)[None].repeat(3, 1, 1), objetivo
+        return objetivo_aumentado(img, mascaras_res(anotaciones, self.res), self.aumentar)
+
+
+def objetivo_aumentado(img, mascaras, aumentar):
+    """img uint8 [H,W] + máscaras booleanas -> (tensor imagen, objetivo de Mask R-CNN), con giros y
+    cambios de brillo si aumentar. Lo comparten el detector general y el especialista."""
+    img = img.astype(np.float32) / 255
+    m = np.stack(mascaras) if mascaras else np.zeros((0,) + img.shape, bool)
+    if aumentar:
+        k = np.random.randint(4)
+        img, m = np.rot90(img, k), np.rot90(m, k, (1, 2))
+        if np.random.rand() < 0.5:
+            img, m = img[:, ::-1], m[:, :, ::-1]
+        img = _fotometria(img.copy())
+    img, m = np.ascontiguousarray(img), np.ascontiguousarray(m)
+    cajas = np.zeros((len(m), 4), np.float32)
+    for j, mj in enumerate(m):
+        ys, xs = np.nonzero(mj)
+        cajas[j] = xs.min(), ys.min(), xs.max() + 1, ys.max() + 1
+    objetivo = {"boxes": torch.from_numpy(cajas), "labels": torch.ones(len(m), dtype=torch.int64),
+                "masks": torch.from_numpy(m.astype(np.uint8))}
+    return torch.from_numpy(img)[None].repeat(3, 1, 1), objetivo
 
 
 def juntar(lote):
