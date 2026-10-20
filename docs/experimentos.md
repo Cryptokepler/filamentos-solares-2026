@@ -73,6 +73,20 @@ Decidido con jhonatan el 20 oct 2026. Notebook nuevo `notebooks/entrenar_especia
 
 Revisado antes de decidir (20 oct): el notebook público del 0,70 usa el mismo detector que nosotros y no tiene especialista en pequeños. Su autor propone mirar a 2048 por trozos como siguiente paso.
 
+**Errores de la ronda 3 y qué esperamos que cambie en la ronda 4.** Cifras del examen final de la ronda 3 (detector + juez + refinador: TP 820, FP 350, FN 547). Cada fila dice si la ronda 4 la ataca o no.
+
+| Error de la ronda 3 | Cuántos | ¿Lo ataca la ronda 4? | Esperado en la ronda 4 |
+|---|---|---|---|
+| Se escapan, menos de 330 px | 61 (solo 24 % encontrados) | Sí, el especialista | ~50 (recupera ~10). Son los más dudosos: muchos solo los marca un experto. |
+| Se escapan, 330-1k px | 240 (51 % encontrados) | Sí, el especialista | ~160 (recupera ~80). Es la bolsa más grande y donde la lupa más debería ayudar. |
+| Se escapan, 1k-3k px | 166 (68 % encontrados) | Sí, el especialista | ~105 (recupera ~60) |
+| Se escapan, más de 3k px | 80 (71 % encontrados) | No | ~80, sin cambio |
+| Inventados "casi" (vio uno real pero lo partió, unió o dibujó mal) | 194 | No | ~194, sin cambio. Es el trabajo de la ronda siguiente. |
+| Inventados puros | 156 | Puede empeorar | ~215. El especialista también inventará algo, sobre todo de 330 a 3k px; su juez debe frenarlo. |
+| **Total** | **TP 820 · FP 350 · FN 547** | | **TP ~970 · FP ~410 · FN ~395** |
+
+Si el especialista no cumple esa tabla (recupera pocos o inventa tantos como recupera), el notebook no lo usa y la nota se queda en ~0,44.
+
 **Resultado esperado (estimación antes de ver el resultado, 20 oct 2026).**
 
 | Etapa | Ronda 3 | Esperado en la ronda 4 | Razonamiento |
@@ -87,6 +101,17 @@ Revisado antes de decidir (20 oct): el notebook público del 0,70 usa el mismo d
 - Ojo con el ruido: el examen salta ±0,015.
 
 **Cómo sabremos qué ayudó.** El notebook imprime la nota del general solo, la del general + especialista con cuántos aciertos e inventados añade el especialista, y la de cada combinación con el refinador.
+
+**Dónde están los puntos que faltan (para que 0,46-0,49 no sea el techo).** Cálculo con las cifras de la ronda 3, suponiendo que cada arreglo sale perfecto. Sirve para ordenar las rondas, no es una promesa.
+
+| Arreglo | Ronda que lo ataca | PQ si saliera perfecto |
+|---|---|---|
+| Ronda 3 tal cual | — | 0,44 |
+| Arreglar los "casi" (partir y unir bien los grandes: −194 FP, −226 FN) | Siguiente | ~0,55 |
+| + Encontrar 150 pequeños más | Ronda 4 (especialista) | ~0,58 |
+| + Mejor borde (forma SQ de 0,68 a 0,75) | Refinador mejor | ~0,64 |
+
+La ronda 4 ataca la bolsa de pequeños. La bolsa más grande que queda son los "casi" de los filamentos grandes (regla 6 de jhonatan).
 
 ## Análisis sin GPU
 
