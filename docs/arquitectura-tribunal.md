@@ -94,3 +94,29 @@ El especialista tenía muy poco por encima de la raya: solo su franja más alta 
 2. **Juez B** (la ficha), entrenado sin GPU con validación cruzada por imagen. Medir.
 3. **Juez A** (el ojo), solo si el paso 2 deja margen. Medir el tribunal A+B.
 4. Si faltan candidatos honestos para entrenar al juez A: 2 detectores, cada uno con la mitad de las imágenes (~5 h de GPU).
+
+## Resultado del paso 1 (20 oct 2026, Kaggle `filamentos-tribunal-paso-1`, 78 min de GPU)
+
+**Comprobación:** la cadena de la ronda 3 vuelve a dar **PQ 0,4405** (TP 820, FP 350, FN 547). Pesos y datos están bien cargados.
+
+**Examen (121 imágenes), con refinador.** Cada candidato se compara con cada experto. Se descartan 1.411 candidatos que repetían a otro de más confianza.
+
+| Franja de confianza | Candidatos | Aciertos | % acierto | IoU medio | Triaje (receta) |
+|---|---|---|---|---|---|
+| 0,10-0,20 | 679 | 22 | 3,2 % | 0,64 | Basura |
+| 0,20-0,30 | 387 | 27 | 7,0 % | 0,70 | Basura |
+| 0,30-0,40 | 298 | 32 | 10,7 % | 0,67 | Raya basura |
+| 0,40-0,50 | 274 | 37 | 13,5 % | 0,67 | Dudoso |
+| 0,50-0,60 | 232 | 38 | 16,4 % | 0,66 | Dudoso |
+| 0,60-0,70 | 275 | 62 | 22,5 % | 0,66 | Dudoso |
+| 0,70-0,80 | 261 | 81 | 31,0 % | 0,66 | Dudoso (en la raya del 32 %) |
+| 0,80-0,85 | 154 | 69 | 44,8 % | 0,65 | Dudoso |
+| 0,85-0,90 | 142 | 73 | 51,4 % | 0,67 | Dudoso |
+| 0,90-0,95 | 325 | 196 | 60,3 % | 0,67 | Dudoso |
+| 0,95-1,00 | 608 | 505 | 83,1 % | 0,69 | **Obvio** |
+
+- **Al alcance:** 1.139 de los 1.367 filamentos reales (83 %) los dibuja algún candidato con IoU > 0,5. La ronda 3 acertaba 820, así que hay **319 más al alcance** (con la silueta del detector sin refinar serían solo 1.043; el refinador ayuda también aquí).
+- **Dónde están:** entre 0,3 y 0,8 hay 1.340 candidatos con 250 aciertos (19 %). En bloque restan, por eso el juez de 0,8 era lo mejor sin tribunal. El trabajo del tribunal es encontrar dentro de ese montón los que superan el 32 %, y además quitar los malos de 0,8-0,95 (621 candidatos, 54 % de acierto).
+- **Techo con un juez perfecto** (cuenta aproximada, IoU 0,66): aprobar los 250 aciertos de 0,3-0,8 sin ningún invento llevaría el examen de 0,44 a ~0,52. Un juez real quedará por debajo.
+
+**Estudio (586 imágenes, el detector ya las conoce):** en las franjas bajas acierta casi igual que en el examen (0,5-0,6: 16,1 % frente a 16,4 %; 0,6-0,7: 23,7 % frente a 22,5 %; 0,7-0,8: 33,4 % frente a 31,0 %). Solo las franjas altas salen algo mejor (0,95-1: 88 % frente a 83 %). **Consecuencia:** los candidatos dudosos de estudio parecen honestos, así que el juez B podría aprender de 586 imágenes y no solo de 121. Se comprobará midiendo siempre en el examen. Si se confirma, no hace falta el paso 4 (2 detectores, ~5 h de GPU).
