@@ -8,6 +8,7 @@ Contexto científico y técnico del reto, con fuentes reales enlazadas. No inclu
 | [02-datos.md](02-datos.md) | La red GONG y el dataset MAGFiLO |
 | [03-metrica.md](03-metrica.md) | Panoptic Quality y cómo nos califican |
 | [04-trabajos-previos.md](04-trabajos-previos.md) | Qué han probado otros para segmentar filamentos |
+| [05-criterio-pequenos.md](05-criterio-pequenos.md) | Qué hace que los expertos coincidan en un filamento pequeño (datos propios + guía de MAGFiLO) |
 | [fuentes.md](fuentes.md) | Lista completa de referencias |
 
 Cada afirmación lleva su fuente entre corchetes, por ejemplo [Mackay 2010]. Lo que medimos nosotros en los datos se marca como **[medido]**.
