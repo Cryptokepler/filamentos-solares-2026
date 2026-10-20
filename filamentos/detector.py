@@ -267,8 +267,10 @@ class DatosRecortes(torch.utils.data.Dataset):
 
 
 @torch.no_grad()
-def refinar(refinador, img2048, mascaras2048, disp, umbral=0.85, lote=32):
-    """Redibuja cada filamento. Si el refinador no ve nada, se queda la silueta del detector."""
+def refinar(refinador, img2048, mascaras2048, disp, umbral=0.85, lote=32, unir=True):
+    """Redibuja cada filamento. Si el refinador no ve nada, se queda la silueta del detector.
+
+    unir=False devuelve un filamento refinado por cada uno de entrada, aunque se pisen."""
     if not mascaras2048:
         return []
     refinador.eval()
@@ -302,5 +304,7 @@ def refinar(refinador, img2048, mascaras2048, disp, umbral=0.85, lote=32):
         completa = np.zeros((TAM, TAM), bool)
         completa[y0:y1, x0:x1] = nueva
         out.append(completa)
+    if not unir:
+        return out
     # Si dos filamentos refinados se pisan, se unen (igual que en el detector)
     return [np.logical_or.reduce([out[i] for i in g]) for g in grupos_solapados(out)]
