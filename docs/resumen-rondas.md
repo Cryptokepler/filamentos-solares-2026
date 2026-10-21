@@ -11,6 +11,7 @@ Escrito el 20 oct 2026, después de la ronda 4. Junta en un sitio los datos del 
 | 2 | Mask R-CNN (detector) a 1024 + juez + refinador a 2048 | **0,445** | 827 / 341 / 540 | 18 / 43 | no enviado | 2 h 40 |
 | 3 | Lo mismo, con el detector entrenado hasta la meseta, reglas 4 y 5 y más umbrales | 0,4405 | 820 / 350 / 547 | 19 / 51 | **0,38** | 5 h 16 |
 | 4 | + detector especialista en pequeños a 2048 por ventanas | 0,4391 | 903 / 524 / 464 | 24 / 54 | no se envía | 2 h 47 |
+| 5 | YOLO11m-seg (detector de 2024) en lugar de Mask R-CNN + refinador de la ronda 3, umbral 0,2 | **0,4532** | 922 / 481 / 445 | — | no enviado | 2 h 41 |
 
 Referencias fijas: experto contra experto 0,34; techo por resolución a 1024 px 0,98.
 

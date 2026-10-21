@@ -202,6 +202,33 @@ No genera envío hasta que veamos los números.
 
 **Requisitos en Kaggle:** GPU T4, **Internet On** (instala `ultralytics` y descarga los pesos de partida), y como Inputs la competición más `filamentos-detector-ronda-2` Version 4 (refinador). Licencia de Ultralytics: AGPL-3.0. Encaja con la regla de repo público al final.
 
+### Ronda 5: resultado real (21 oct 2026, Kaggle filamentos-ronda-5-yolo, 161 min de GPU)
+
+YOLO11m-seg entrenó 88 vueltas y se paró por el tope de 2,5 h, no por meseta. El mAP del examen estaba plano desde la vuelta ~60 (0,67). Generó 1.708 candidatos en el examen (confianza ≥ 0,1).
+
+| Etapa | Ronda 3 | Esperado | Ronda 5 real (mejor umbral) |
+|---|---|---|---|
+| Detector solo | 0,389 | 0,37-0,41 | **0,352** (umbral 0,3; TP 696 · FP 443 · FN 671) |
+| + refinador | 0,4405 | 0,43-0,46 | **0,4532** (umbral 0,2; TP 922 · FP 481 · FN 445) |
+
+| Error | Ronda 3 | Esperado | Ronda 5 (umbral 0,2) |
+|---|---|---|---|
+| Aciertos | 820 | ~860 | **922** (+102) |
+| Inventados | 350 | ~365 | **481** (+131) |
+| Escapados | 547 | ~505 | **445** (−102) |
+| Escapados < 1.000 px | ~300 | ~270 | 236 |
+| Escapados 1k-3k px | 166 | ~150 | 142 |
+| Escapados > 3k px | 80 | ~80 | 67 |
+
+Cuánto cuesta cada grupo (puntos de PQ que se ganarían si desapareciera): inventados 0,095 (ronda 3: 0,07); escapados 0,087 (ronda 3: 0,16).
+
+- Dentro de lo esperado (+0,013 sobre la ronda 3, justo en el borde del ruido ±0,015).
+- Cambia el reparto: YOLO ve 102 filamentos más (sobre todo pequeños) pero inventa 131 más. Es un detector más "generoso".
+- YOLO solo dibuja peor (SQ 0,63 vs 0,68 con refinador): el refinador es imprescindible.
+- Su confianza está bien calibrada: la franja 0,2-0,3 acierta el 34 % (justo el punto de equilibrio ~1/3); la 0,1-0,2 el 20 % (no compensa).
+- Al alcance de algún candidato: 1.063 de 1.367 (78 %), menos que Mask R-CNN (1.139), pero acierta más de los que alcanza.
+- Pendiente: votación con la ronda 3 en el simulador (necesita `candidatos_yolo_examen.json`).
+
 ## Análisis sin GPU
 
 - **La tabla pública de Kaggle está rota (20 oct 2026).** El notebook público "Please fix the Leaderboard" demuestra que enviar máscaras vacías puntúa entre 0,70 y 1,00. Los organizadores dicen en el foro que se toman "muy en serio" un 0,41 y que revisarán a mano todas las notas altas. Los participantes honestos del foro van por 0,40-0,46. Conclusión: la meta de "alcanzar al líder (0,64)" no vale; la brújula es nuestro examen local.
