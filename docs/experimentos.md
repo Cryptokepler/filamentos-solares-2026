@@ -243,6 +243,19 @@ Cuánto cuesta cada grupo (puntos de PQ que se ganarían si desapareciera): inve
 - Lo que la ronda 3 ve y YOLO no, casi nunca es real: Mask R-CNN no aporta filamentos nuevos.
 - Conclusión: el salto viene del detector nuevo, no de la votación. YOLO solo con umbral 0,2-0,25 es el candidato a envío.
 
+## Curva de aprendizaje (plan, 21 oct 2026): ¿más imágenes suben la nota?
+
+Decidido con jhonatan tras la ronda 5. Él cree que faltan imágenes; antes de buscar más (fotos vecinas de GONG, otros telescopios) medimos si la cantidad es la palanca.
+
+**Diseño:** mismo sistema que la ronda 5 (YOLO11m-seg a 1024 + refinador de la ronda 3, juez de umbral + unir) y mismo examen de 121 imágenes. Solo cambia la parte de las 586 imágenes de estudio que ve YOLO: 25 %, 50 % y 75 %, anidadas (el 25 % está dentro del 50 %…), orden al azar con semilla 0. Tope 1,75 h por paso, paciencia 25. El 100 % es la ronda 5 (0,4532). Notebook: `notebooks/curva_aprendizaje.ipynb` (generado por `generar_notebook_curva.py`), ~6 h de GPU.
+
+**Esperado (antes de lanzar):** en detección de objetos con pocos datos la nota suele crecer con el logaritmo de las imágenes. Estimación: 25 % ≈ 0,40-0,42; 50 % ≈ 0,43-0,44; 75 % ≈ 0,445-0,45.
+
+**Regla de decisión (fijada antes de lanzar):**
+- 50 % → 100 % sube **≥ 0,02**: más imágenes pagan; doblar debería dar otro escalón parecido → fase 2 (fotos vecinas de GONG con las etiquetas copiadas, permitido por los organizadores solo para entrenar).
+- Sube **< 0,01**: dentro del ruido; la cantidad no es la palanca.
+- Entre medias: decidir juntos mirando escapados por tamaño.
+
 ## Análisis sin GPU
 
 - **La tabla pública de Kaggle está rota (20 oct 2026).** El notebook público "Please fix the Leaderboard" demuestra que enviar máscaras vacías puntúa entre 0,70 y 1,00. Los organizadores dicen en el foro que se toman "muy en serio" un 0,41 y que revisarán a mano todas las notas altas. Los participantes honestos del foro van por 0,40-0,46. Conclusión: la meta de "alcanzar al líder (0,64)" no vale; la brújula es nuestro examen local.
