@@ -182,3 +182,5 @@ Es decir, es ruido, no un estilo estable que se pueda aprender.
 **3. Entrenar con un solo experto por imagen** (lo que hace el notebook público) no parece buena idea según el techo con dibujos perfectos: copiar a un experto da 0,605 y la unión de todos 0,658. Nuestro entrenamiento con todos los expertos ya va en la dirección buena (más generoso que un solo experto, con el umbral que lo ajusta). Probarlo de verdad costaría una ronda de GPU (~3-4 h), con un resultado esperado de igual o peor.
 
 **Conclusión:** la palanca del "estilo" no tiene recorrido con lo que sabemos. El 0,41-0,62 de antes era la variación de un experto a otro, no algo que podamos elegir. La palanca que queda con número detrás es **el borde (SQ)**: hoy el IoU medio de los aciertos es 0,68, y cada +0,01 suma ~+0,0065 de PQ.
+
+**Borde, experto contra experto** (2.146 parejas de filamentos que dos expertos dibujan con IoU > 0,5): coinciden un **0,634** de media (mediana 0,629). Nuestros aciertos coinciden 0,68 con el experto, así que ya dibujamos el borde por encima del nivel de acuerdo humano. Hay poco margen también aquí.
