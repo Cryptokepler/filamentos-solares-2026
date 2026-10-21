@@ -166,3 +166,19 @@ Scripts: `analisis/cajas_juez_a.py`, `analisis/juez_a.py` y `analisis/tribunal_a
 - **Mejorar el borde (SQ):** cada +0,01 de SQ suma ~+0,0065 de PQ.
 - **Elegir a qué estilo de experto apuntar:** según con qué experto nos comparen, la nota va de 0,41 a 0,62.
 - **Un juez A más fuerte** (red preentrenada, con GPU): sin garantía. El AUC de la ficha ya es mejor que el del ojo entrenado desde cero.
+
+## Estilo de experto (21 oct 2026, sin GPU)
+
+Pregunta: ¿podemos apuntar al estilo de un experto concreto para subir la nota?
+
+**1. Los expertos no se pueden adivinar por la imagen.** Los anotadores trabajan en grupos de 2-3 (por ejemplo, 010401/02/03 anotaron las mismas ~75 imágenes). Cada grupo tiene imágenes de todos los años (2011-2022) y de los 6 telescopios, repartidas casi por igual. Ni la fecha ni el telescopio dicen qué grupo anotó una imagen del test.
+
+**2. Aunque supiéramos el grupo, se ganaría poco y de forma inestable.** Mejor umbral de confianza frente a cada grupo, con el simulador:
+- casi todos los grupos están en 0,7-0,9, y el 0,8 general queda a menos de 0,01-0,03 del óptimo de cada uno;
+- el umbral óptimo de un grupo no se repite entre estudio y examen: el 0103 da 0,8 en examen y 0,9 en estudio; el 0201, 0,7 y 0,6.
+
+Es decir, es ruido, no un estilo estable que se pueda aprender.
+
+**3. Entrenar con un solo experto por imagen** (lo que hace el notebook público) no parece buena idea según el techo con dibujos perfectos: copiar a un experto da 0,605 y la unión de todos 0,658. Nuestro entrenamiento con todos los expertos ya va en la dirección buena (más generoso que un solo experto, con el umbral que lo ajusta). Probarlo de verdad costaría una ronda de GPU (~3-4 h), con un resultado esperado de igual o peor.
+
+**Conclusión:** la palanca del "estilo" no tiene recorrido con lo que sabemos. El 0,41-0,62 de antes era la variación de un experto a otro, no algo que podamos elegir. La palanca que queda con número detrás es **el borde (SQ)**: hoy el IoU medio de los aciertos es 0,68, y cada +0,01 suma ~+0,0065 de PQ.
