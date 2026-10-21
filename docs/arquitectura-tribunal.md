@@ -140,3 +140,29 @@ El montón de candidatos sí esconde ~+0,10. Entre 0,3 y 0,8 hay 183 candidatos 
 - **Por qué no:** de los 877 dudosos bajos (0,3-0,8), la ficha solo encuentra 55 con más del 40 % de acierto (y aciertan el 41 %). Los 183 buenos de verdad no se distinguen por tamaño, oscuridad, forma, posición ni vecinos. La confianza del detector ya contiene casi todo lo que dice la ficha: el juez B "sin confianza" se queda en AUC 0,74, casi igual que con ella.
 
 **Conclusión:** el margen existe (+0,10 con un juez perfecto), pero no está en los números de la ficha. Si está en algún sitio, está en los píxeles. Siguiente pieza: **juez A, "el ojo"**, una red pequeña que mire el recorte de cada candidato.
+
+## Paso 3: juez A, "el ojo", y el tribunal A+B (21 oct 2026, sin GPU)
+
+Scripts: `analisis/cajas_juez_a.py`, `analisis/juez_a.py` y `analisis/tribunal_ab.py`.
+
+**Montaje del juez A.**
+- **Datos:** recortes de 128 px (imagen + silueta) de los 9.253 candidatos con confianza ≥ 0,3. Las imágenes son las del Mac de jhonatan, y los recortes son idénticos a los del notebook.
+- **Red:** 5 bloques convolucionales entrenados desde cero en CPU, durante 14 vueltas (45 min).
+- **Entrenamiento y medida:** aprende con los 7.583 candidatos de estudio y se mide con los 1.670 del examen.
+
+| Juez | AUC en los dudosos | Calibración | Mejor PQ del examen | Umbral elegido en una mitad y medido en la otra |
+|---|---|---|---|---|
+| Base (ronda 3) | — | — | 0,4409 | 0,4405 / 0,4413 |
+| A (el ojo) | 0,70 | Se pasa de optimista (dice 69, acierta 50) | 0,433 | 0,423 / 0,435 (peor) |
+| B (la ficha) | 0,75 | Buena | 0,443 | 0,441 / 0,441 (igual) |
+| Tribunal: media de A y B | 0,76 | Buena | 0,444 | 0,445 / 0,438 (igual) |
+
+- A y B coinciden poco: correlación 0,54, y en 93 de 1.295 dudosos discrepan en más de 40 puntos. Ven cosas distintas, como queríamos, pero juntos solo suben el AUC de 0,75 a 0,76.
+- **Ningún juez mueve la nota fuera del ruido (±0,015).**
+
+**Por qué el techo de 0,54 no se alcanza.** El juez perfecto sabe qué dibujó *el experto concreto de esa imagen*. Pero los expertos discrepan entre ellos: experto contra experto da 0,34 de PQ, y en los pequeños el 61 % lo marca uno solo. Un juez que mira la imagen solo puede saber qué dibujaría *un experto cualquiera*. Ese techo está mucho más bajo y lo mide el AUC: con 0,75, la separación es parcial. Lo que queda en el montón de dudosos es, sobre todo, la duda humana.
+
+**Conclusión:** el tribunal está montado y medido, y el simulador queda listo para cualquier idea futura. Con los jueces de ahora no supera a la ronda 3. Palancas que quedan, ya medidas como posibles:
+- **Mejorar el borde (SQ):** cada +0,01 de SQ suma ~+0,0065 de PQ.
+- **Elegir a qué estilo de experto apuntar:** según con qué experto nos comparen, la nota va de 0,41 a 0,62.
+- **Un juez A más fuerte** (red preentrenada, con GPU): sin garantía. El AUC de la ficha ya es mejor que el del ojo entrenado desde cero.
