@@ -120,3 +120,23 @@ El especialista tenía muy poco por encima de la raya: solo su franja más alta 
 - **Techo con un juez perfecto** (cuenta aproximada, IoU 0,66): aprobar los 250 aciertos de 0,3-0,8 sin ningún invento llevaría el examen de 0,44 a ~0,52. Un juez real quedará por debajo.
 
 **Estudio (586 imágenes, el detector ya las conoce):** en las franjas bajas acierta casi igual que en el examen (0,5-0,6: 16,1 % frente a 16,4 %; 0,6-0,7: 23,7 % frente a 22,5 %; 0,7-0,8: 33,4 % frente a 31,0 %). Solo las franjas altas salen algo mejor (0,95-1: 88 % frente a 83 %). **Consecuencia:** los candidatos dudosos de estudio parecen honestos, así que el juez B podría aprender de 586 imágenes y no solo de 121. Se comprobará midiendo siempre en el examen. Si se confirma, no hace falta el paso 4 (2 detectores, ~5 h de GPU).
+
+## Paso 2: juez B, "la ficha" (21 oct 2026, sin GPU)
+
+Scripts: `analisis/tribunal_sim.py` (etiqueta los candidatos y simula la nota) y `analisis/juez_b.py`.
+
+**El simulador es fiel.** Con la receta de la ronda 3 (confianza ≥ 0,8, uniendo solapes) da PQ 0,4409 frente al 0,4405 real (TP 821 frente a 820). Desde aquí cualquier receta se prueba en segundos.
+
+**Techo con un juez perfecto** (sabe cuántos expertos dibujaron cada candidato): **PQ 0,535-0,540**. Lo reparte así:
+- solo añadir los buenos de 0,3-0,8: 0,488;
+- solo quitar los malos de 0,8-0,95: 0,479.
+
+El montón de candidatos sí esconde ~+0,10. Entre 0,3 y 0,8 hay 183 candidatos (de 877) que superan la raya, y aciertan el 84 %.
+
+**El juez B (árboles de decisión con 18 rasgos de la ficha)** aprende de los candidatos de estudio y se mide en el examen:
+- **Calibración buena.** Cuando dice 35, aciertan el 34 %; cuando dice 55, el 56 %; cuando dice 70, el 65 %. Su nota es una probabilidad de verdad.
+- **AUC 0,75 en los dudosos** (0,5 = azar, 1 = perfecto).
+- **Pero no sube la nota.** El mejor umbral da 0,443-0,444 frente a 0,441 de base, dentro del ruido (±0,015). Con el umbral elegido en una mitad del examen y medido en la otra: 0,439-0,447 frente a 0,441-0,441.
+- **Por qué no:** de los 877 dudosos bajos (0,3-0,8), la ficha solo encuentra 55 con más del 40 % de acierto (y aciertan el 41 %). Los 183 buenos de verdad no se distinguen por tamaño, oscuridad, forma, posición ni vecinos. La confianza del detector ya contiene casi todo lo que dice la ficha: el juez B "sin confianza" se queda en AUC 0,74, casi igual que con ella.
+
+**Conclusión:** el margen existe (+0,10 con un juez perfecto), pero no está en los números de la ficha. Si está en algún sitio, está en los píxeles. Siguiente pieza: **juez A, "el ojo"**, una red pequeña que mire el recorte de cada candidato.
