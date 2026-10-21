@@ -154,6 +154,54 @@ Conclusión: en partir, unir y dibujar ya estamos al nivel de un experto frente 
 
 **Decisión pendiente con jhonatan.** No relanzar el especialista tal cual. Siguiente palanca candidata: elegir el estilo de experto (p. ej. entrenar con un solo experto por imagen) o un juez que aprenda qué pequeños marcan los expertos.
 
+## Ronda 5 (plan): detector YOLO11-seg
+
+Decidido con jhonatan el 21 oct 2026. Tras el tribunal (los jueces no suben la nota) y el análisis de estilo de experto (sin palanca), la pregunta es si un detector más moderno que Mask R-CNN ve mejor los pequeños que se escapan. Candidato elegido: **YOLO11-seg** (Ultralytics, 2024).
+
+**De dónde partimos (ronda 3, examen):** PQ **0,4405** = TP 820 · FP 350 · FN 547, borde (SQ) 0,682.
+- De los 547 escapados, 313 no los toca ninguna predicción y 234 están vistos a medias.
+- En modo generoso, el detector actual propone algo encima de 319 de los 547 (paso 1 del tribunal).
+
+| Pieza | Ronda 3 | Ronda 5 | Por qué |
+|---|---|---|---|
+| Detector | Mask R-CNN v2 (torchvision), 1024 px | **YOLO11-seg** (tamaño m), 1024 px, preentrenado en COCO y reentrenado con las 586 imágenes de estudio. Cada experto como ejemplo aparte, como siempre. Estudia hasta que el examen de estudio deje de mejorar (tope ~3 h). | Arquitectura de 2024 y "ojo" distinto. Es la familia más usada hoy en Kaggle para segmentar objetos. |
+| Juez | Confianza ≥ 0,8 y unir solapes | El mismo tipo de juez. Su umbral se busca **sin GPU** con el simulador, a partir de los candidatos guardados (confianza ≥ 0,1). | La confianza de YOLO no está en la misma escala que la de Mask R-CNN. |
+| Refinador | U-Net ResNet-18 de la ronda 3 | **El mismo, sin reentrenar.** | No es lo que falla. YOLO dibuja las máscaras algo más bastas, y el refinador las redibuja. |
+| Votación | — | **Sin GPU:** juntar los candidatos de YOLO con los de la ronda 3 en el simulador (un filamento entra si lo apoyan los dos, o uno con confianza alta). | Si YOLO empata, sirve igual como segundo modelo que vota. |
+
+**Qué guarda el notebook:**
+- nota del examen de YOLO solo y de YOLO + refinador, con el desglose TP/FP/FN y los escapados por tamaño;
+- `candidatos_yolo_examen.json` y `candidatos_yolo_estudio.json`, con el mismo formato que el paso 1;
+- los pesos `yolo_mejor.pt`.
+
+No genera envío hasta que veamos los números.
+
+**Errores de la ronda 3 y qué esperamos en la ronda 5** (estimación antes de lanzar):
+
+| Error de la ronda 3 | Cuántos | Esperado con YOLO + refinador | Razonamiento |
+|---|---|---|---|
+| Escapados < 1.000 px | ~300 | ~270 | Una arquitectura con mejor detección de objetos pequeños puede rescatar algunos, pero gran parte es duda humana. |
+| Escapados 1k-3k px | 166 | ~150 | Igual. |
+| Escapados > 3k px | 80 | ~80 | Ya va bien. |
+| Inventados | 350 | ~350-380 | Un detector nuevo con pocas imágenes suele inventar algo más al principio. |
+| **Total** | **TP 820 · FP 350 · FN 547** | **TP ~860 · FP ~365 · FN ~505** | |
+
+**Resultado esperado:**
+
+| Etapa | Ronda 3 | Esperado en la ronda 5 |
+|---|---|---|
+| Detector solo con su juez | 0,389 | **0,37-0,41**: máscaras más bastas, pero quizá más aciertos |
+| + refinador | 0,4405 | **0,43-0,46** (centro 0,445) |
+| Votación YOLO + ronda 3 (sin GPU) | — | **0,44-0,47** (centro 0,455) |
+
+**Cómo leer el resultado:**
+- Si YOLO + refinador da ≥ 0,455, el ojo moderno ayuda y merecería la pena probar el siguiente (Mask2Former o un ojo moderno en Mask R-CNN).
+- Si empata pero la votación sube, nos quedamos con dos modelos que votan.
+- Si nada sube, la fuga de los pequeños es duda humana y no un problema de "ojo". Entonces solo quedaría pulir: reentrenar con las 707 imágenes al final.
+- Ruido del examen: ±0,015.
+
+**Requisitos en Kaggle:** GPU T4, **Internet On** (instala `ultralytics` y descarga los pesos de partida), y como Inputs la competición más `filamentos-detector-ronda-2` Version 4 (refinador). Licencia de Ultralytics: AGPL-3.0. Encaja con la regla de repo público al final.
+
 ## Análisis sin GPU
 
 - **La tabla pública de Kaggle está rota (20 oct 2026).** El notebook público "Please fix the Leaderboard" demuestra que enviar máscaras vacías puntúa entre 0,70 y 1,00. Los organizadores dicen en el foro que se toman "muy en serio" un 0,41 y que revisarán a mano todas las notas altas. Los participantes honestos del foro van por 0,40-0,46. Conclusión: la meta de "alcanzar al líder (0,64)" no vale; la brújula es nuestro examen local.
