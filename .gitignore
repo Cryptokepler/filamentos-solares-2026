@@ -5,3 +5,4 @@ visor/data.js
 *.csv
 __pycache__/
 .DS_Store
+*.pt
