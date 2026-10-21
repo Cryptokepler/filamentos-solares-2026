@@ -227,7 +227,21 @@ Cuánto cuesta cada grupo (puntos de PQ que se ganarían si desapareciera): inve
 - YOLO solo dibuja peor (SQ 0,63 vs 0,68 con refinador): el refinador es imprescindible.
 - Su confianza está bien calibrada: la franja 0,2-0,3 acierta el 34 % (justo el punto de equilibrio ~1/3); la 0,1-0,2 el 20 % (no compensa).
 - Al alcance de algún candidato: 1.063 de 1.367 (78 %), menos que Mask R-CNN (1.139), pero acierta más de los que alcanza.
-- Pendiente: votación con la ronda 3 en el simulador (necesita `candidatos_yolo_examen.json`).
+
+**Votación YOLO + ronda 3 (sin GPU, `analisis/votacion_r5.py`).** Se emparejan los candidatos de los dos modelos (IoU > 0,5); se prueban ~180 recetas. "Honesto" = receta elegida en una mitad del examen y medida en la otra (media de los dos cruces).
+
+| Receta | Mejor en el examen | TP / FP / FN | Honesto |
+|---|---|---|---|
+| Solo ronda 3 (conf ≥ 0,8) | 0,4409 | 821 / 352 / 546 | 0,438 |
+| Solo YOLO (conf ≥ 0,25) | 0,4560 | 878 / 381 / 489 | 0,452 |
+| Unión (YOLO ≥ 0,25 o ronda 3 ≥ 0,95) | 0,4592 | 885 / 377 / 482 | 0,451 |
+| Acuerdo (los dos lo ven) | 0,4525 | 889 / 426 / 478 | 0,449 |
+| Media ponderada (0,2·ronda 3 + 0,8·YOLO ≥ 0,35) | **0,4604** | 884 / 369 / 483 | **0,457** |
+
+- La votación apenas suma: +0,005 honesto sobre YOLO solo, dentro del ruido.
+- La silueta de YOLO refinada gana siempre a la de Mask R-CNN refinada en las parejas.
+- Lo que la ronda 3 ve y YOLO no, casi nunca es real: Mask R-CNN no aporta filamentos nuevos.
+- Conclusión: el salto viene del detector nuevo, no de la votación. YOLO solo con umbral 0,2-0,25 es el candidato a envío.
 
 ## Análisis sin GPU
 
