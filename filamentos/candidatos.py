@@ -49,8 +49,11 @@ def _ficha(m, rel, r2048, conf, m_res):
                 alarg=round(D.alargamiento(m_res), 3))
 
 
-def procesar(gen, ref, grande, disp, res=1024, conf_min=0.1, umbral_ref=0.5, lado_recorte=0):
+def procesar(gen, ref, grande, disp, res=1024, conf_min=0.1, umbral_ref=0.5, lado_recorte=0, detectar=None):
     """Una imagen a 2048 -> (candidatos, recortes, predicción de la ronda 3 para comprobar).
+
+    detectar: función img[res,res] -> (máscaras [N,res,res], confianzas [N]) para usar otro detector
+    (por ejemplo YOLO); por defecto, el Mask R-CNN gen.
 
     candidatos: lista de dict con la ficha, 'rle' (detector) y 'rle_ref' (refinador).
     recortes: uint8 [N, 2, lado, lado] (imagen y silueta) o None si lado_recorte=0.
@@ -62,7 +65,7 @@ def procesar(gen, ref, grande, disp, res=1024, conf_min=0.1, umbral_ref=0.5, lad
     r2048 = np.asarray(Image.fromarray(r).resize((TAM, TAM), Image.BILINEAR))
     rel = D.brillo_relativo(grande, r2048).astype(np.float32)
     with torch.autocast(disp, enabled=disp == "cuda"):
-        m, c = D.detectar(gen, img, disp)
+        m, c = detectar(img) if detectar else D.detectar(gen, img, disp)
     # Lo mismo que la ronda 3 (juez 0,8 uniendo solapes + refinador 0,5), para comprobar que todo cuadra
     r3 = D.instancias(m, c, r, umbral=0.8, fusionar=True, area_min=0)
     with torch.autocast(disp, enabled=disp == "cuda"):
