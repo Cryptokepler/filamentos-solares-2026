@@ -297,6 +297,24 @@ Idea 2 elegida por jhonatan: un refinador que aprenda el borde donde coinciden l
 - Nuestro dibujo (YOLO + refinador, umbral 0,25) ya tiene el tamaño justo (área mediana 1,03 veces la del experto). Engordar o adelgazar 1 px baja la nota (0,456 → 0,432 / 0,428). Un píxel de borde cambia el área un 15-20 %, porque los filamentos son finos.
 - Nuestro SQ 0,682 ya supera al de experto contra experto (0,643) y al de la mejor combinación de expertos (0,650). Conclusión: el borde promedio no tiene margen; no se entrena.
 
+## Estudio: ¿mirar más fino a los pequeños? (22 oct 2026, sin GPU)
+
+Idea 3 (YOLO a 1536 o modelo más grande con las 2 T4). Antes de gastar GPU, `analisis/estudio_pequenos.py` clasifica los 489 escapados de YOLO + refinador (umbral 0,25, PQ 0,456).
+
+**Esperado:** si muchos escapados pequeños no los ve YOLO en absoluto y son muy finos a 1024 px, más resolución ayudaría.
+
+| Tamaño | Escapados | Visto flojito (conf < 0,25) | Rozado, mal dibujado | Nada | Grosor a 1024 (mediana) | ≤ 3 px | Confirmados por otro experto |
+|---|---|---|---|---|---|---|---|
+| < 1.000 px | 265 | 126 | 65 | 74 | 5,8 px | 5 | 30 de 125 |
+| 1.000-3.000 | 153 | 44 | 87 | 22 | 9,2 px | 0 | 34 de 92 |
+| > 3.000 | 71 | 15 | 51 | 5 | 12,4 px | 0 | 7 de 47 |
+
+**Real:**
+- Solo 101 escapados no los ve YOLO en absoluto; de esos, 3 son finos a 1024 y 8 de 54 los confirma otro experto (15 %): son sobre todo dibujos dudosos de un solo experto.
+- La resolución no limita: los pequeños miden ~6 px de grueso a 1024, YOLO los ve; el resto de escapados ya tiene candidato (flojito o mal partido).
+- Techo si se recuperaran los 101 sin inventar nada: +0,034. Con la puntería de la ronda 4 (2 inventos por cada recuperado): 0,000. Con 1 invento por recuperado: +0,014.
+- Conclusión: no se lanza; 3-4 h de GPU para una ganancia esperada dentro del ruido.
+
 ## Análisis sin GPU
 
 - **La tabla pública de Kaggle está rota (20 oct 2026).** El notebook público "Please fix the Leaderboard" demuestra que enviar máscaras vacías puntúa entre 0,70 y 1,00. Los organizadores dicen en el foro que se toman "muy en serio" un 0,41 y que revisarán a mano todas las notas altas. Los participantes honestos del foro van por 0,40-0,46. Conclusión: la meta de "alcanzar al líder (0,64)" no vale; la brújula es nuestro examen local.
