@@ -286,6 +286,17 @@ Idea de jhonatan: tres YOLO y un filamento pasa si lo ven dos. Probado con los Y
 
 **Real:** el mejor jurado gana +0,006 en honesto (0,458 frente a 0,452), dentro del ruido (±0,015). La regla 2 de 3 no gana nada. El jurado quita inventados, pero se lleva por delante casi tantos aciertos: los YOLO se equivocan en los mismos sitios porque esos sitios son justo los dudosos entre expertos. No compensa entrenar YOLO nuevos para un jurado.
 
+## Techo del "borde promedio" (22 oct 2026, sin GPU)
+
+Idea 2 elegida por jhonatan: un refinador que aprenda el borde donde coinciden los expertos. Antes de gastar GPU se mide el techo con `analisis/techo_borde.py`.
+
+**Esperado:** si el borde común de varios expertos se parece a cada experto bastante más que el de uno solo, hay margen en el SQ (0,68).
+
+**Real:**
+- Entre expertos (151 imágenes con 3 expertos, 1.152 filamentos dibujados por los tres), parecido medio (IoU) con un experto: dibujo de otro experto 0,643; intersección de los otros dos 0,635; unión de los otros dos 0,650. Combinar dibujos de expertos casi no acerca (+0,007): sus diferencias de borde son al azar, no hay un "borde verdadero" escondido en la media.
+- Nuestro dibujo (YOLO + refinador, umbral 0,25) ya tiene el tamaño justo (área mediana 1,03 veces la del experto). Engordar o adelgazar 1 px baja la nota (0,456 → 0,432 / 0,428). Un píxel de borde cambia el área un 15-20 %, porque los filamentos son finos.
+- Nuestro SQ 0,682 ya supera al de experto contra experto (0,643) y al de la mejor combinación de expertos (0,650). Conclusión: el borde promedio no tiene margen; no se entrena.
+
 ## Análisis sin GPU
 
 - **La tabla pública de Kaggle está rota (20 oct 2026).** El notebook público "Please fix the Leaderboard" demuestra que enviar máscaras vacías puntúa entre 0,70 y 1,00. Los organizadores dicen en el foro que se toman "muy en serio" un 0,41 y que revisarán a mano todas las notas altas. Los participantes honestos del foro van por 0,40-0,46. Conclusión: la meta de "alcanzar al líder (0,64)" no vale; la brújula es nuestro examen local.
