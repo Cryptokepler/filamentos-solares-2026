@@ -12,6 +12,7 @@ Escrito el 20 oct 2026, después de la ronda 4. Junta en un sitio los datos del 
 | 3 | Lo mismo, con el detector entrenado hasta la meseta, reglas 4 y 5 y más umbrales | 0,4405 | 820 / 350 / 547 | 19 / 51 | **0,38** | 5 h 16 |
 | 4 | + detector especialista en pequeños a 2048 por ventanas | 0,4391 | 903 / 524 / 464 | 24 / 54 | no se envía | 2 h 47 |
 | 5 | YOLO11m-seg (detector de 2024) en lugar de Mask R-CNN + refinador de la ronda 3, umbral 0,2 | **0,4532** | 922 / 481 / 445 | — | no enviado | 2 h 41 |
+| Curva | Ronda 5 con el 25 / 50 / 75 % de las imágenes de estudio (146 / 293 / 440) | 0,428 / 0,447 / 0,440 | 811/416/556 · 846/363/521 · 844/412/523 | — | no se envía | 5 h 18 |
 
 Referencias fijas: experto contra experto 0,34; techo por resolución a 1024 px 0,98.
 

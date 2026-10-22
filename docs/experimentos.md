@@ -243,7 +243,7 @@ Cuánto cuesta cada grupo (puntos de PQ que se ganarían si desapareciera): inve
 - Lo que la ronda 3 ve y YOLO no, casi nunca es real: Mask R-CNN no aporta filamentos nuevos.
 - Conclusión: el salto viene del detector nuevo, no de la votación. YOLO solo con umbral 0,2-0,25 es el candidato a envío.
 
-## Curva de aprendizaje (plan, 21 oct 2026): ¿más imágenes suben la nota?
+## Curva de aprendizaje (21-22 oct 2026): ¿más imágenes suben la nota?
 
 Decidido con jhonatan tras la ronda 5. Él cree que faltan imágenes; antes de buscar más (fotos vecinas de GONG, otros telescopios) medimos si la cantidad es la palanca.
 
@@ -255,6 +255,20 @@ Decidido con jhonatan tras la ronda 5. Él cree que faltan imágenes; antes de b
 - 50 % → 100 % sube **≥ 0,02**: más imágenes pagan; doblar debería dar otro escalón parecido → fase 2 (fotos vecinas de GONG con las etiquetas copiadas, permitido por los organizadores solo para entrenar).
 - Sube **< 0,01**: dentro del ruido; la cantidad no es la palanca.
 - Entre medias: decidir juntos mirando escapados por tamaño.
+
+**Resultado real (22 oct 2026, 318 min de GPU).** Mejor umbral de cada paso, YOLO + refinador en el examen de 121:
+
+| Paso | Imágenes | Vueltas | Umbral | PQ | Aciertos | Inventados | Escapados |
+|---|---|---|---|---|---|---|---|
+| 25 % | 146 | 146 | 0,30 | 0,4282 | 811 | 416 | 556 |
+| 50 % | 293 | 114 | 0,25 | 0,4473 | 846 | 363 | 521 |
+| 75 % | 440 | 81 (tope de tiempo) | 0,25 | 0,4399 | 844 | 412 | 523 |
+| 100 % (ronda 5) | 586 | 88 | 0,20 | 0,4532 | 922 | 481 | 445 |
+
+- Esperado vs real: 25 % salió mejor de lo previsto (0,428 vs 0,40-0,42), 50 % algo mejor (0,447 vs 0,43-0,44), 75 % algo peor (0,440 vs 0,445-0,45).
+- Regla: 50 % → 100 % sube **+0,006 (< 0,01) → dentro del ruido**. De 25 % a 50 % sí sube (+0,019). La curva se aplana hacia las ~300 imágenes: más imágenes del mismo tipo (mismas etiquetas, mismo desacuerdo entre expertos) ya no son la palanca.
+- Consecuencia: las fotos vecinas de GONG con etiquetas copiadas (fase 2) son aún más parecidas a las que ya tenemos que una imagen nueva de verdad; no se espera que paguen. Encaja con el diagnóstico de la meseta: el freno es el desacuerdo entre expertos, no la cantidad.
+- Matiz: el 75 % paró por el tope de 1,75 h en la vuelta 81; el 100 % tuvo 2,5 h. La diferencia 75 %/100 % (0,013) mezcla datos y tiempo, pero sigue en el borde del ruido.
 
 ## Análisis sin GPU
 
