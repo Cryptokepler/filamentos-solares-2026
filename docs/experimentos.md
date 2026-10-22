@@ -270,6 +270,22 @@ Decidido con jhonatan tras la ronda 5. Él cree que faltan imágenes; antes de b
 - Consecuencia: las fotos vecinas de GONG con etiquetas copiadas (fase 2) son aún más parecidas a las que ya tenemos que una imagen nueva de verdad; no se espera que paguen. Encaja con el diagnóstico de la meseta: el freno es el desacuerdo entre expertos, no la cantidad.
 - Matiz: el 75 % paró por el tope de 1,75 h en la vuelta 81; el 100 % tuvo 2,5 h. La diferencia 75 %/100 % (0,013) mezcla datos y tiempo, pero sigue en el borde del ruido.
 
+## Jurado de YOLO (22 oct 2026, sin GPU)
+
+Idea de jhonatan: tres YOLO y un filamento pasa si lo ven dos. Probado con los YOLO de la curva (25/50/75 %) y el de la ronda 5 (100 %), con `analisis/jurado_yolo.py`. Los candidatos que se solapan (IoU > 0,5) forman un caso; cada YOLO vota si lo ve con confianza >= t; pasa con k votos. Medida honesta: ajuste elegido en una mitad del examen y medido en la otra.
+
+**Esperado:** como mucho +0,01 (la votación YOLO + Mask R-CNN dio +0,004).
+
+| Jurado | Mejor regla | PQ | Aciertos | Inventados | Escapados | Honesto |
+|---|---|---|---|---|---|---|
+| YOLO 100 % solo | umbral 0,25 | 0,4560 | 878 | 381 | 489 | 0,4520 |
+| 100 + 50 | 2 de 2, t 0,2 | 0,4592 | 884 | 375 | 483 | 0,4581 |
+| 100 + 75 + 50, regla 2 de 3 | t 0,25 | 0,4544 | 871 | 381 | 496 | — |
+| 100 + 75 + 50, mejor | 3 de 3, t 0,2 | 0,4583 | 871 | 357 | 496 | 0,4543 |
+| los cuatro | 3 de 4, t 0,25 | 0,4530 | 850 | 348 | 517 | 0,4470 |
+
+**Real:** el mejor jurado gana +0,006 en honesto (0,458 frente a 0,452), dentro del ruido (±0,015). La regla 2 de 3 no gana nada. El jurado quita inventados, pero se lleva por delante casi tantos aciertos: los YOLO se equivocan en los mismos sitios porque esos sitios son justo los dudosos entre expertos. No compensa entrenar YOLO nuevos para un jurado.
+
 ## Análisis sin GPU
 
 - **La tabla pública de Kaggle está rota (20 oct 2026).** El notebook público "Please fix the Leaderboard" demuestra que enviar máscaras vacías puntúa entre 0,70 y 1,00. Los organizadores dicen en el foro que se toman "muy en serio" un 0,41 y que revisarán a mano todas las notas altas. Los participantes honestos del foro van por 0,40-0,46. Conclusión: la meta de "alcanzar al líder (0,64)" no vale; la brújula es nuestro examen local.
