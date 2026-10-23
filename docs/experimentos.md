@@ -315,6 +315,18 @@ Idea 3 (YOLO a 1536 o modelo más grande con las 2 T4). Antes de gastar GPU, `an
 - Techo si se recuperaran los 101 sin inventar nada: +0,034. Con la puntería de la ronda 4 (2 inventos por cada recuperado): 0,000. Con 1 invento por recuperado: +0,014.
 - Conclusión: no se lanza; 3-4 h de GPU para una ganancia esperada dentro del ruido.
 
+## Contraste con la propuesta "ronda 8" de otro asistente (23 oct 2026, sin GPU)
+
+Propuesta externa traída por jhonatan: no entrenar; medir PQ con SQ/RQ, barrer post-procesado (umbral, área mínima, unir trozos a menos de N px), luego unir por línea central (spine) y, si no basta, entrenar bordes entre vecinos. Medido sobre YOLO + refinador en el examen con `analisis/partir_unir.py`:
+
+- **Paso 1** ya lo hacemos desde la ronda 1 (examen fijo de 121, PQ, SQ, aciertos, inventados, escapados). Base: PQ 0,456, SQ 0,682, RQ 0,669.
+- **Partidos y fusionados:** de 489 escapados, solo 6 son filamentos que partimos en trozos; de 381 inventados, 24 juntan varios filamentos en uno. Partir/unir no es la fuga.
+- **Unir trozos a menos de N px:** gap 5-10 = igual (0,4561 como mucho); gap 20 = 0,4515; gap 40 = 0,4418. Empeora al crecer.
+- **Área mínima:** hasta 200 px no quita nada; 300 px = 0,4544; 500 px = 0,4351. Borrar pequeños quita más aciertos que inventos (ya visto en la ronda 3).
+- **Spine (paso 3):** no compensa con 6 partidos. **Paso 4:** no hace falta por la misma razón.
+- Su código (`pq_postproc.py`) está pensado para un mapa de probabilidad por píxel (U-Net, nuestra ronda 1) y un solo experto por imagen; nuestro detector da instancias y el examen tiene 1-3 expertos.
+- Conclusión: coincide en que el modelo no es el cuello de botella, pero el post-procesado tampoco: ya está ajustado. El freno sigue siendo el desacuerdo entre expertos.
+
 ## Análisis sin GPU
 
 - **La tabla pública de Kaggle está rota (20 oct 2026).** El notebook público "Please fix the Leaderboard" demuestra que enviar máscaras vacías puntúa entre 0,70 y 1,00. Los organizadores dicen en el foro que se toman "muy en serio" un 0,41 y que revisarán a mano todas las notas altas. Los participantes honestos del foro van por 0,40-0,46. Conclusión: la meta de "alcanzar al líder (0,64)" no vale; la brújula es nuestro examen local.
