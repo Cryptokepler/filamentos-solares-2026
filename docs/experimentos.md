@@ -327,11 +327,23 @@ Propuesta externa traída por jhonatan: no entrenar; medir PQ con SQ/RQ, barrer 
 - Su código (`pq_postproc.py`) está pensado para un mapa de probabilidad por píxel (U-Net, nuestra ronda 1) y un solo experto por imagen; nuestro detector da instancias y el examen tiene 1-3 expertos.
 - Conclusión: coincide en que el modelo no es el cuello de botella, pero el post-procesado tampoco: ya está ajustado. El freno sigue siendo el desacuerdo entre expertos.
 
-## Ronda 5 + imagen volteada (TTA) y envío (plan, 23 oct 2026)
+## Ronda 5 + imagen volteada (TTA) y envío (23 oct 2026)
 
 Decidido con jhonatan. No entrena: el YOLO de la ronda 5 mira cada imagen 4 veces (normal, volteada izquierda-derecha, arriba-abajo y las dos); las respuestas se devuelven a su sitio, las que se solapan (IoU > 0,5) se juntan, la confianza es la media de las 4 vistas y la silueta los píxeles que marcan al menos la mitad de las vistas que lo vieron (`filamentos/yolo.py`, `detector_tta`). Después, refinador y juez de la ronda 5 como siempre. Notebook `notebooks/ronda5_tta_envio.ipynb` (generado por `generar_notebook_tta.py`): mide el examen y genera `submission.csv` del test con la mejor opción (TTA o normal). ~40-50 min de GPU, no envía nada.
 
 **Esperado (antes de lanzar):** +0,005 a +0,01 sobre la ronda 5 normal (0,4560 con umbral 0,25), sobre todo quitando inventados que solo ve una vista. En Kaggle, la ronda 5 debería dar ~0,39-0,40 (Kaggle sale ~0,06 por debajo del examen; ronda 3: 0,4405 → 0,38).
+
+**Real (23 oct 2026, Kaggle filamentos-ronda-5-tta-envio v1, 17 min de GPU):** el TTA **empeora**.
+
+| Umbral | PQ | SQ | Aciertos | Inventados | Escapados |
+|---|---|---|---|---|---|
+| 0,20 | 0,4478 | 0,680 | 901 | 468 | 466 |
+| **0,25** | **0,4485** | 0,679 | 873 | 404 | 494 |
+| 0,30 | 0,4452 | 0,681 | 832 | 345 | 535 |
+| Sin TTA, 0,25 | **0,4560** | 0,682 | 878 | 381 | 489 |
+
+- −0,0075 frente a lo esperado (+0,005 a +0,01). Con el mismo umbral, el TTA acierta 5 menos e inventa 23 más: las vistas volteadas añaden propuestas que la normal descartaba, y la media de confianzas no las filtra. YOLO ya entrenó con volteos al azar, así que mirar volteado no le aporta información nueva (igual que el jurado de YOLO).
+- El notebook eligió solo la versión **sin TTA, umbral 0,25** para el test: `submission.csv` con 1.196 filamentos en 177 de 180 imágenes. Pendiente de que jhonatan decida enviarlo (esperado en Kaggle ~0,39-0,40 frente a 0,38 de la ronda 3).
 
 ## Análisis sin GPU
 
