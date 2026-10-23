@@ -65,21 +65,25 @@ def procesar(gen, ref, grande, disp, res=1024, conf_min=0.1, umbral_ref=0.5, lad
     r2048 = np.asarray(Image.fromarray(r).resize((TAM, TAM), Image.BILINEAR))
     rel = D.brillo_relativo(grande, r2048).astype(np.float32)
     with torch.autocast(disp, enabled=disp == "cuda"):
-        m, c = detectar(img) if detectar else D.detectar(gen, img, disp)
+        salida = detectar(img) if detectar else D.detectar(gen, img, disp)
+    # un detector puede devolver además un dict por candidato (p. ej. las confianzas de cada vista del TTA)
+    m, c = salida[:2]
+    extra = list(salida[2]) if len(salida) > 2 else [{} for _ in c]
     # Lo mismo que la ronda 3 (juez 0,8 uniendo solapes + refinador 0,5), para comprobar que todo cuadra
     r3 = D.instancias(m, c, r, umbral=0.8, fusionar=True, area_min=0)
     with torch.autocast(disp, enabled=disp == "cuda"):
         r3 = D.refinar(ref, grande, r3, disp, umbral=umbral_ref)
     keep = c >= conf_min
-    m, c = m[keep], c[keep]
+    m, c, extra = m[keep], c[keep], [e for e, k in zip(extra, keep) if k]
     m2048 = [D.a_2048(x) for x in m]
     keep = [i for i, x in enumerate(m2048) if x.any()]
-    m, c, m2048 = m[keep], c[keep], [m2048[i] for i in keep]
+    m, c, m2048, extra = m[keep], c[keep], [m2048[i] for i in keep], [extra[i] for i in keep]
     with torch.autocast(disp, enabled=disp == "cuda"):
         refinadas = D.refinar(ref, grande, m2048, disp, umbral=umbral_ref, unir=False)
     cands, recs = [], []
-    for mi, ci, mg, mr in zip(m, c, m2048, refinadas):
+    for mi, ci, mg, mr, ex in zip(m, c, m2048, refinadas, extra):
         f = _ficha(mg, rel, r2048, ci, mi)
+        f.update(ex)
         f["area_ref"] = int(mr.sum())
         f["rle"], f["rle_ref"] = a_texto(mg), a_texto(mr)
         cands.append(f)

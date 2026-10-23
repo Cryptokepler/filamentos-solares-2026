@@ -327,6 +327,12 @@ Propuesta externa traída por jhonatan: no entrenar; medir PQ con SQ/RQ, barrer 
 - Su código (`pq_postproc.py`) está pensado para un mapa de probabilidad por píxel (U-Net, nuestra ronda 1) y un solo experto por imagen; nuestro detector da instancias y el examen tiene 1-3 expertos.
 - Conclusión: coincide en que el modelo no es el cuello de botella, pero el post-procesado tampoco: ya está ajustado. El freno sigue siendo el desacuerdo entre expertos.
 
+## Ronda 5 + imagen volteada (TTA) y envío (plan, 23 oct 2026)
+
+Decidido con jhonatan. No entrena: el YOLO de la ronda 5 mira cada imagen 4 veces (normal, volteada izquierda-derecha, arriba-abajo y las dos); las respuestas se devuelven a su sitio, las que se solapan (IoU > 0,5) se juntan, la confianza es la media de las 4 vistas y la silueta los píxeles que marcan al menos la mitad de las vistas que lo vieron (`filamentos/yolo.py`, `detector_tta`). Después, refinador y juez de la ronda 5 como siempre. Notebook `notebooks/ronda5_tta_envio.ipynb` (generado por `generar_notebook_tta.py`): mide el examen y genera `submission.csv` del test con la mejor opción (TTA o normal). ~40-50 min de GPU, no envía nada.
+
+**Esperado (antes de lanzar):** +0,005 a +0,01 sobre la ronda 5 normal (0,4560 con umbral 0,25), sobre todo quitando inventados que solo ve una vista. En Kaggle, la ronda 5 debería dar ~0,39-0,40 (Kaggle sale ~0,06 por debajo del examen; ronda 3: 0,4405 → 0,38).
+
 ## Análisis sin GPU
 
 - **La tabla pública de Kaggle está rota (20 oct 2026).** El notebook público "Please fix the Leaderboard" demuestra que enviar máscaras vacías puntúa entre 0,70 y 1,00. Los organizadores dicen en el foro que se toman "muy en serio" un 0,41 y que revisarán a mano todas las notas altas. Los participantes honestos del foro van por 0,40-0,46. Conclusión: la meta de "alcanzar al líder (0,64)" no vale; la brújula es nuestro examen local.

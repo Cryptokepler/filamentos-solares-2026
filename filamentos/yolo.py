@@ -63,6 +63,51 @@ def detector(modelo, res=1024, conf_min=0.1):
     return detectar
 
 
+VISTAS = ((False, False), (True, False), (False, True), (True, True))  # (voltear izquierda-derecha, arriba-abajo)
+
+
+def detector_tta(modelo, res=1024, conf_min=0.1, vistas=VISTAS):
+    """Como detector(), pero mirando la imagen volteada de varias formas (TTA) y juntando las respuestas.
+
+    Cada vista se predice, sus máscaras se devuelven a la posición original y las de distintas vistas que se
+    solapan (IoU > 0,5) se agrupan en un candidato. Su confianza es la media de las vistas (0 en las que no
+    lo vieron) y su máscara, los píxeles que marcan al menos la mitad de las vistas que lo vieron. Devuelve
+    también, por candidato, la confianza de cada vista ('vistas') para probar otras reglas sin GPU."""
+    base = detector(modelo, res, conf_min)
+
+    def detectar(img):
+        ms, cs, vs = [], [], []
+        for v, (lr, ud) in enumerate(vistas):
+            x = img[:, ::-1] if lr else img
+            x = x[::-1] if ud else x
+            m, c = base(np.ascontiguousarray(x))
+            m = m[:, :, ::-1] if lr else m
+            m = m[:, ::-1] if ud else m
+            ms += list(m)
+            cs += list(c)
+            vs += [v] * len(c)
+        if not ms:
+            return np.zeros((0, res, res), bool), np.zeros(0, np.float32), []
+        rles = [mask_utils.encode(np.asfortranarray(x.astype(np.uint8))) for x in ms]
+        vs = np.array(vs)
+        enlace = (np.asarray(mask_utils.iou(rles, rles, [0] * len(rles))) > 0.5) & (vs[:, None] != vs[None, :])
+        _, et = connected_components(enlace, directed=False)
+        masks, confs, extra = [], [], []
+        for k in range(et.max() + 1):
+            idx = np.flatnonzero(et == k)
+            por_vista = np.zeros(len(vistas), np.float32)
+            for i in idx:
+                por_vista[vs[i]] = max(por_vista[vs[i]], cs[i])
+            votos = np.sum([ms[i] for i in idx], axis=0)
+            masks.append(votos * 2 >= len(idx))
+            confs.append(float(por_vista.mean()))
+            extra.append(dict(vistas=[round(float(x), 4) for x in por_vista]))
+        orden = np.argsort(-np.array(confs))
+        return (np.stack([masks[i] for i in orden]), np.array([confs[i] for i in orden], np.float32),
+                [extra[i] for i in orden])
+    return detectar
+
+
 def _sin_repetidos(cands, clave):
     cands = sorted(cands, key=lambda c: -c["conf"])
     rles = [de_texto(c[clave]) for c in cands]
@@ -70,6 +115,18 @@ def _sin_repetidos(cands, clave):
         return [], []
     dup = np.triu(np.asarray(mask_utils.iou(rles, rles, [0] * len(rles))) > 0.5, 1).any(0)
     return [c for c, d in zip(cands, dup) if not d], [r for r, d in zip(rles, dup) if not d]
+
+
+def seleccion(cands, umbral, clave="rle_ref", radio_max=0.95):
+    """Juez de la ronda 5 para una imagen: confianza >= umbral, fuera del borde, sin repetidos, unir los que se tocan.
+    Devuelve la lista de RLE finales."""
+    cs, rles = _sin_repetidos(cands, clave)
+    sel = [r for c, r in zip(cs, rles) if c["conf"] >= umbral and c["radio"] <= radio_max]
+    if len(sel) > 1:
+        toca = np.asarray(mask_utils.iou(sel, sel, [0] * len(sel))) > 0
+        _, et = connected_components(toca, directed=False)
+        sel = [mask_utils.merge([sel[j] for j in np.flatnonzero(et == k)]) for k in range(et.max() + 1)]
+    return sel
 
 
 def nota_umbral(cands_por_imagen, reales_por_imagen, umbral, clave="rle_ref", radio_max=0.95, por_tamano=False):
@@ -81,12 +138,7 @@ def nota_umbral(cands_por_imagen, reales_por_imagen, umbral, clave="rle_ref", ra
     tamanos = (0, 1000, 3000, 10 ** 9)
     escapados = np.zeros(3, int)
     for n, cands in cands_por_imagen.items():
-        cs, rles = _sin_repetidos(cands, clave)
-        sel = [r for c, r in zip(cs, rles) if c["conf"] >= umbral and c["radio"] <= radio_max]
-        if len(sel) > 1:
-            toca = np.asarray(mask_utils.iou(sel, sel, [0] * len(sel))) > 0
-            _, et = connected_components(toca, directed=False)
-            sel = [mask_utils.merge([sel[j] for j in np.flatnonzero(et == k)]) for k in range(et.max() + 1)]
+        sel = seleccion(cands, umbral, clave, radio_max)
         for reales in reales_por_imagen[n]:
             if not sel or not reales:
                 fp += len(sel)
