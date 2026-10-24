@@ -359,6 +359,20 @@ Idea de jhonatan: "despigmentar" la imagen, enseñarle al modelo la misma foto p
 
 **Esperado (antes de lanzar):** entre 0,450 y 0,470 frente a 0,4560 de la ronda 5 (umbral 0,25: 878 / 381 / 489). Lo más probable, dentro del ruido (±0,015): YOLO ya aprende filtros parecidos por su cuenta y el freno principal es el desacuerdo entre expertos, que no cambia con la foto. Donde puede ganar: los 185 escapados que la ronda 5 ya ve "flojito" (confianza < 0,25) y los pequeños junto al borde del disco. Si sube ≥ 0,015, es la primera palanca que mueve la meseta y conviene probarla también en el refinador.
 
+**Real (24 oct 2026, Kaggle filamentos-ronda-7-tres-vistas v1, 172 min de GPU; YOLO 88 vueltas en 155 min, cortado por el tope):** **igual que la ronda 5.**
+
+| Umbral | PQ | SQ | Aciertos | Inventados | Escapados |
+|---|---|---|---|---|---|
+| 0,20 | 0,4554 | 0,681 | 907 | 438 | 460 |
+| **0,25** | **0,4557** | 0,681 | 871 | 366 | 496 |
+| 0,30 | 0,4550 | 0,683 | 828 | 292 | 539 |
+| Ronda 5, 0,25 | 0,4560 | 0,682 | 878 | 381 | 489 |
+
+- −0,0003: dentro del ruido, en el borde bajo de lo esperado (0,450-0,470). Mismo umbral: 7 aciertos menos, 15 inventados menos, 7 escapados más. YOLO solo: 0,351 (ronda 5: 0,352).
+- Lectura: dar la foto ya "subrayada" no le enseña nada a YOLO que no aprendiera solo con una vista. Confirma que el freno no está en cómo ve la imagen.
+- El notebook dejó `submission.csv` con umbral 0,25: 1.189 filamentos en 177 de 180 imágenes. No enviado.
+
+
 ## Análisis sin GPU
 
 - **La tabla pública de Kaggle está rota (20 oct 2026).** El notebook público "Please fix the Leaderboard" demuestra que enviar máscaras vacías puntúa entre 0,70 y 1,00. Los organizadores dicen en el foro que se toman "muy en serio" un 0,41 y que revisarán a mano todas las notas altas. Los participantes honestos del foro van por 0,40-0,46. Conclusión: la meta de "alcanzar al líder (0,64)" no vale; la brújula es nuestro examen local.
