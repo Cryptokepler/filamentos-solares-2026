@@ -6,6 +6,7 @@ refinador, el simulador y la votación sin GPU.
 """
 import os
 
+import cv2
 import numpy as np
 from PIL import Image
 from pycocotools import mask as mask_utils
@@ -15,7 +16,26 @@ from .candidatos import de_texto
 from .datos import TAM
 
 
-def preparar_datos(datos, anot, tr, val, salida, res=1024):
+def tres_vistas(img):
+    """Ronda 7 (idea de jhonatan, 24 oct 2026): la misma foto vista de tres formas, una por canal.
+
+    img uint8 [H,W] (gris) -> uint8 [H,W,3]:
+      0) la original;
+      1) contraste local (CLAHE): realza lo débil sin quemar el centro brillante del disco;
+      2) "solo lo oscuro y fino" (black-hat): cuánto más oscuro es cada píxel que su entorno cercano,
+         lo que quita el brillo general del disco y deja las rayas oscuras como los filamentos (negras sobre blanco).
+    Los tamaños están pensados para 1024 px (filamento típico ~8 px de grueso) y se escalan con la imagen.
+    """
+    esc = img.shape[0] / 1024
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(16, 16)).apply(img)
+    k = int(round(25 * esc)) | 1
+    cierre = cv2.morphologyEx(img, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (k, k)))
+    oscuro = cv2.subtract(cierre, img)
+    oscuro = 255 - np.clip(oscuro.astype(np.float32) * 6, 0, 255).astype(np.uint8)
+    return np.stack([img, clahe, oscuro], -1)
+
+
+def preparar_datos(datos, anot, tr, val, salida, res=1024, vistas=False):
     """Carpeta en formato YOLO: una imagen a res px por imagen original y un fichero de etiquetas por
     experto (la misma imagen se repite con otro nombre, enlazada, una vez por experto). Las listas de
     entrenamiento y validación solo incluyen las copias por experto, no la imagen original."""
@@ -27,6 +47,8 @@ def preparar_datos(datos, anot, tr, val, salida, res=1024):
             origen = f"{salida}/images/{parte}/{base}.png"
             if not os.path.exists(origen):
                 img = Image.open(f"{datos}/train/train_images/{n}").convert("L").resize((res, res), Image.BILINEAR)
+                if vistas:
+                    img = Image.fromarray(tres_vistas(np.asarray(img)))
                 img.save(origen)
             for e, anns in anot[n].items():
                 nombre = f"{base}_{e}"
@@ -47,10 +69,14 @@ def preparar_datos(datos, anot, tr, val, salida, res=1024):
     return f"{salida}/datos.yaml"
 
 
-def detector(modelo, res=1024, conf_min=0.1):
-    """Función img uint8 [res,res] -> (máscaras [N,res,res] bool, confianzas [N]), como detector.detectar."""
+def detector(modelo, res=1024, conf_min=0.1, vistas=False):
+    """Función img uint8 [res,res] -> (máscaras [N,res,res] bool, confianzas [N]), como detector.detectar.
+
+    vistas=True: el modelo se entrenó con tres_vistas(). Ultralytics lee los PNG de entrenamiento con OpenCV (BGR) y
+    trata igual un array que le pasamos, así que se invierte el orden de canales para que coincida."""
     def detectar(img):
-        r = modelo.predict(np.stack([img] * 3, -1), imgsz=res, conf=conf_min, retina_masks=True,
+        x = tres_vistas(img)[..., ::-1] if vistas else np.stack([img] * 3, -1)
+        r = modelo.predict(np.ascontiguousarray(x), imgsz=res, conf=conf_min, retina_masks=True,
                            max_det=300, verbose=False)[0]
         if r.masks is None or not len(r.boxes):
             return np.zeros((0, res, res), bool), np.zeros(0, np.float32)

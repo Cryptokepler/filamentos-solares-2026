@@ -345,6 +345,20 @@ Decidido con jhonatan. No entrena: el YOLO de la ronda 5 mira cada imagen 4 vece
 - −0,0075 frente a lo esperado (+0,005 a +0,01). Con el mismo umbral, el TTA acierta 5 menos e inventa 23 más: las vistas volteadas añaden propuestas que la normal descartaba, y la media de confianzas no las filtra. YOLO ya entrenó con volteos al azar, así que mirar volteado no le aporta información nueva (igual que el jurado de YOLO).
 - El notebook eligió solo la versión **sin TTA, umbral 0,25** para el test: `submission.csv` con 1.196 filamentos en 177 de 180 imágenes. Pendiente de que jhonatan decida enviarlo (esperado en Kaggle ~0,39-0,40 frente a 0,38 de la ronda 3).
 
+## Ronda 7: YOLO con la foto vista de tres formas (24 oct 2026)
+
+Idea de jhonatan: "despigmentar" la imagen, enseñarle al modelo la misma foto procesada de otras maneras para que contraste patrones y decida mejor (menos escapados y menos inventados). Las fotos ya son en gris, así que se concreta así: hasta ahora YOLO recibía **tres copias iguales** de la foto (sus tres canales de color); ahora cada canal lleva una versión distinta (`filamentos/yolo.py`, `tres_vistas`):
+
+| Canal | Qué es | Para qué |
+|---|---|---|
+| 1 | La original | Lo de siempre |
+| 2 | Contraste local (CLAHE, 16×16 casillas, límite 2) | Realza lo débil sin quemar el centro brillante del disco |
+| 3 | "Solo lo oscuro y fino" (black-hat de 25 px a 1024, ×6, invertido) | Quita el brillo general del disco y deja las rayas oscuras: los filamentos salen negros sobre blanco |
+
+**Un solo cambio:** la entrada de YOLO. Mismo YOLO11m-seg a 1024, mismas 586 imágenes de estudio, mismos ajustes y tope de 2,5 h, mismo refinador de la ronda 3 (que sigue viendo la foto original), mismo examen de 121. Notebook `notebooks/ronda7_tres_vistas.ipynb` (generado por `generar_notebook_ronda7.py`): entrena, mide el examen y deja `submission.csv` del test con el mejor umbral (no envía nada). ~3 h de GPU. Probado en pequeño en CPU (de principio a fin).
+
+**Esperado (antes de lanzar):** entre 0,450 y 0,470 frente a 0,4560 de la ronda 5 (umbral 0,25: 878 / 381 / 489). Lo más probable, dentro del ruido (±0,015): YOLO ya aprende filtros parecidos por su cuenta y el freno principal es el desacuerdo entre expertos, que no cambia con la foto. Donde puede ganar: los 185 escapados que la ronda 5 ya ve "flojito" (confianza < 0,25) y los pequeños junto al borde del disco. Si sube ≥ 0,015, es la primera palanca que mueve la meseta y conviene probarla también en el refinador.
+
 ## Análisis sin GPU
 
 - **La tabla pública de Kaggle está rota (20 oct 2026).** El notebook público "Please fix the Leaderboard" demuestra que enviar máscaras vacías puntúa entre 0,70 y 1,00. Los organizadores dicen en el foro que se toman "muy en serio" un 0,41 y que revisarán a mano todas las notas altas. Los participantes honestos del foro van por 0,40-0,46. Conclusión: la meta de "alcanzar al líder (0,64)" no vale; la brújula es nuestro examen local.
