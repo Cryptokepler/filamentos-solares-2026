@@ -384,6 +384,7 @@ Idea de jhonatan: "despigmentar" la imagen, enseñarle al modelo la misma foto p
 
 - El mejor jurado medido hasta ahora: +0,009 honesto sobre la ronda 5 sola. Sigue dentro del ruido (±0,015), pero es la primera vez que la medida honesta sube y no baja. El de tres vistas aporta algo más de variedad que un YOLO igual con menos fotos.
 - Ronda 5 + ronda 7 se puede generar para el test sin GPU: los candidatos del test de las dos ya existen (notebooks `filamentos-ronda-5-tta-envio` y `filamentos-ronda-7-tres-vistas`). El de tres pide además los del test de la curva 50 % (~20 min de GPU).
+- **Hecho (25 oct 2026):** `analisis/jurado_envio.py` con t=0,2, k=2 sobre los dos `candidatos_test.json` → `submission.csv` del jurado: 1.212 filamentos en 177 de 180 imágenes (ronda 5 sola 1.196, ronda 7 sola 1.189). Comprobación: con solo la ronda 5 (t=0,25, k=1) reproduce exactamente los 1.196 de su `submission.csv`. Esperado en Kaggle ~0,40 (examen − ~0,06). Pendiente de que jhonatan decida enviarlo.
 
 
 
