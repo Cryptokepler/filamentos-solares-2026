@@ -397,6 +397,8 @@ Juez A: YOLO11m-seg igual que las rondas 5 y 7, con otra vista (`filamentos/yolo
 
 **Esperado (antes de lanzar):** solo, entre 0,43 y 0,46 (puede bajar: dos de los tres canales ya no son la foto). En el jurado 5 + 7 + venas: entre 0,458 y 0,470 honesto, frente a 0,4607 de 5 + 7. Si el jurado de tres pasa de 0,465, se monta el envío.
 
+**Real (25 oct 2026, 185 min de GPU, `filamentos-juez-venas` versión 2):** solo, con refinador, **0,4425** a umbral 0,25 (aciertos 842, inventados 382, escapados 525), frente a 0,4560 de la ronda 5 (878 / 381 / 489). Dentro de lo esperado, en la parte baja: inventa lo mismo pero se le escapan 36 más, casi todos pequeños (<1.000 px: 276 frente a los de la ronda 5). YOLO solo 0,350. Entrenamiento 160 min (tope 2,5 h). `submission.csv` generado (1.193 filamentos en 177 imágenes), no enviado. Falta lo importante: medir el jurado 5 + 7 + venas con los candidatos del examen.
+
 ## Análisis sin GPU
 
 - **La tabla pública de Kaggle está rota (20 oct 2026).** El notebook público "Please fix the Leaderboard" demuestra que enviar máscaras vacías puntúa entre 0,70 y 1,00. Los organizadores dicen en el foro que se toman "muy en serio" un 0,41 y que revisarán a mano todas las notas altas. Los participantes honestos del foro van por 0,40-0,46. Conclusión: la meta de "alcanzar al líder (0,64)" no vale; la brújula es nuestro examen local.
