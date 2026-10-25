@@ -372,6 +372,20 @@ Idea de jhonatan: "despigmentar" la imagen, enseñarle al modelo la misma foto p
 - Lectura: dar la foto ya "subrayada" no le enseña nada a YOLO que no aprendiera solo con una vista. Confirma que el freno no está en cómo ve la imagen.
 - El notebook dejó `submission.csv` con umbral 0,25: 1.189 filamentos en 177 de 180 imágenes. No enviado.
 
+**Jurado ronda 5 + ronda 7 (25 oct 2026, sin GPU, `analisis/jurado_yolo.py`).** Idea: el YOLO de tres vistas mira la foto de otra manera, así que quizá falle en sitios distintos que el de la ronda 5.
+
+| Jurado | Regla | PQ | Honesto (mitad/mitad) | Aciertos | Inventados | Escapados |
+|---|---|---|---|---|---|---|
+| Ronda 5 sola | conf ≥ 0,25 | 0,4560 | 0,4520 | 878 | 381 | 489 |
+| Ronda 7 sola | conf ≥ 0,25 | 0,4557 | 0,4533 | 871 | 366 | 496 |
+| Ronda 5 + curva 50 % (22 oct) | 2 de 2, conf ≥ 0,2 | 0,4592 | 0,4581 | 884 | 375 | 483 |
+| **Ronda 5 + ronda 7** | 2 de 2, conf ≥ 0,2 | **0,4606** | **0,4607** | 892 | 382 | 475 |
+| Ronda 5 + ronda 7 + curva 50 % | 3 de 3, conf ≥ 0,2 | 0,4629 | 0,4630 | 867 | 329 | 500 |
+
+- El mejor jurado medido hasta ahora: +0,009 honesto sobre la ronda 5 sola. Sigue dentro del ruido (±0,015), pero es la primera vez que la medida honesta sube y no baja. El de tres vistas aporta algo más de variedad que un YOLO igual con menos fotos.
+- Ronda 5 + ronda 7 se puede generar para el test sin GPU: los candidatos del test de las dos ya existen (notebooks `filamentos-ronda-5-tta-envio` y `filamentos-ronda-7-tres-vistas`). El de tres pide además los del test de la curva 50 % (~20 min de GPU).
+
+
 
 ## Análisis sin GPU
 
