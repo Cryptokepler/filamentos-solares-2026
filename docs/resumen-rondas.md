@@ -1,6 +1,6 @@
-# Resumen de las 4 rondas: qué funcionó y qué no
+# Resumen de las rondas: qué funcionó y qué no
 
-Escrito el 20 oct 2026, después de la ronda 4. Junta en un sitio los datos del [diario](experimentos.md) para pensar en las siguientes soluciones. Todas las notas son PQ en el mismo examen fijo de 121 imágenes de train (nunca del test). El examen tiene un ruido de ±0,015, así que una diferencia menor que eso entre rondas no significa nada.
+Escrito el 20 oct 2026, después de la ronda 4; puesto al día el 25 oct 2026, después del jurado ronda 5 + ronda 7 (Kaggle 0,39). Junta en un sitio los datos del [diario](experimentos.md) para pensar en las siguientes soluciones. Todas las notas son PQ en el mismo examen fijo de 121 imágenes de train (nunca del test). El examen tiene un ruido de ±0,015, así que una diferencia menor que eso entre rondas no significa nada.
 
 ## 1. Las rondas de un vistazo
 
@@ -13,10 +13,14 @@ Escrito el 20 oct 2026, después de la ronda 4. Junta en un sitio los datos del 
 | 4 | + detector especialista en pequeños a 2048 por ventanas | 0,4391 | 903 / 524 / 464 | 24 / 54 | no se envía | 2 h 47 |
 | 5 | YOLO11m-seg (detector de 2024) en lugar de Mask R-CNN + refinador de la ronda 3, umbral 0,2 | **0,4532** | 922 / 481 / 445 | — | no enviado | 2 h 41 |
 | Curva | Ronda 5 con el 25 / 50 / 75 % de las imágenes de estudio (146 / 293 / 440) | 0,428 / 0,447 / 0,440 | 811/416/556 · 846/363/521 · 844/412/523 | — | no se envía | 5 h 18 |
+| 5 (umbral 0,25) | La ronda 5 con el umbral del juez en 0,25 (sin GPU) | 0,4560 | 878 / 381 / 489 | — | no enviado | 0 |
+| 5 + TTA | La ronda 5 mirando la foto volteada de 4 formas | 0,4485 | 873 / 404 / 494 | — | no se envía | 17 min |
+| 7 | YOLO con la foto vista de tres formas (original, contraste local, "solo lo oscuro") | 0,4557 | 871 / 366 / 496 | — | no enviado | 2 h 52 |
+| **Jurado 5 + 7** | Los YOLO de las rondas 5 y 7 votan: pasa lo que ven los dos con confianza ≥ 0,2 (sin GPU) | **0,4607** (honesto) | 892 / 382 / 475 | — | **0,39** | 0 |
 
 Referencias fijas: experto contra experto 0,34; techo por resolución a 1024 px 0,98.
 
-**En una frase:** el único salto de verdad fue pasar de U-Net a detector + refinador (ronda 2, +0,06). Las rondas 3 y 4 no movieron la nota.
+**En una frase:** el único salto grande fue pasar de U-Net a detector + refinador (ronda 2, +0,06). Después, YOLO (ronda 5, +0,01) y el jurado ronda 5 + ronda 7 (+0,005 más) han ido sumando poco a poco: Kaggle 0,34 → 0,38 → 0,39.
 
 ## 2. Pieza por pieza
 
@@ -33,6 +37,15 @@ Referencias fijas: experto contra experto 0,34; techo por resolución a 1024 px 
 | **Regla 4** (descartar lo muy negro: mancha solar) | Ronda 3 | No quitó nada: el detector no propone manchas solares | ➖ No actúa |
 | **Regla 5** (descartar hilos de más de 10:1) | Ronda 3 | −0,012: quitó 31 inventados y 48 aciertos | ❌ Empeora |
 | **Especialista con lupa a 2048** | Ronda 4: ventanas de 1024 sobre la imagen original, centradas en pequeños | Antes del refinador: 0,389 → 0,393. Después: 0,4390 → 0,4391. Encuentra **88** filamentos que el general no veía, pero **inventa ~170**. Su examen no mejoró de la vuelta 2 (0,382) a la 14 (0,385). | ❌ Ve más, pero no distingue lo real |
+| **YOLO11-seg en lugar de Mask R-CNN** | Ronda 5 | 0,4405 → 0,4560 (umbral 0,25). Ve más (922 aciertos con umbral 0,2) y su confianza está mejor calibrada. | ✅ Funcionó, poco |
+| **Más imágenes del mismo tipo** | Curva de aprendizaje: 25 / 50 / 75 / 100 % | 0,428 / 0,447 / 0,440 / 0,453: se aplana hacia ~300 imágenes | ❌ No es la palanca |
+| **Jurado de YOLO iguales** | YOLO entrenados con 25-100 % de las fotos, "2 de 3" | 0,454-0,458 honesto: fallan en los mismos casos | ❌ Sin efecto |
+| **Borde promedio entre expertos** | Medido sin GPU | Nuestro SQ 0,682 ya supera el parecido entre expertos (0,643-0,650); ±1 px baja a ~0,43 | ❌ Sin margen |
+| **Mirar más fino (1536 px / modelo grande)** | Estudio de los escapados sin GPU | Solo 101 de 489 no se ven nada y solo 3 son finos; techo +0,034 sin inventar | ❌ No se lanza |
+| **Post-procesado (unir trozos, área mínima)** | Propuesta externa "ronda 8", medida sin GPU | Unir a 5-10 px igual; a 20-40 px peor; área mínima ≥ 300 px peor | ❌ Sin margen |
+| **Foto volteada al predecir (TTA)** | 4 vistas volteadas, media de confianzas | 0,4485: +23 inventados | ❌ Empeora |
+| **Tres vistas de la foto (idea de jhonatan)** | Ronda 7: original + contraste local + "solo lo oscuro" como canales | Sola 0,4557 (igual). Pero crea un YOLO que se equivoca en sitios distintos | ➖ Sola no; útil en jurado |
+| **Jurado ronda 5 + ronda 7** | Pasa lo que ven los dos (conf ≥ 0,2) | 0,4607 honesto (+0,009), **Kaggle 0,39**. Con un tercero (YOLO 50 %, "3 de 3") 0,4630. Añadir el Mask R-CNN de la ronda 3 con el mismo umbral empeora (0,449): su confianza va en otra escala | ✅ Funcionó, poco |
 
 ## 3. Dónde están los errores que quedan (ronda 3, la mejor enviada)
 
@@ -79,14 +92,37 @@ Analizado filamento a filamento (`analisis/casi_ronda3.py`):
 4. **Lo que falta no es vista, es criterio.** Los pequeños y los débiles son justo donde los expertos dudan. Un modelo entrenado con todos los expertos a la vez aprende una "media" de criterios que no coincide del todo con ninguno.
 5. **Nuestro examen local predice bien la dirección de Kaggle:** 0,384 → 0,4405 en local; 0,34 → 0,38 en Kaggle (unos 0,04-0,06 menos).
 
-## 6. Lo que aún no hemos probado (ideas para discutir, sin decidir)
+## 6. El mejor envío: jurado ronda 5 + ronda 7 (Kaggle 0,39, 25 oct 2026)
 
-| Idea | Qué ataca | Dato que la apoya |
-|---|---|---|
-| Entrenar apuntando a un estilo de experto (p. ej. un solo experto por imagen, el que más dibujó, como el notebook público del 0,70) | El criterio en los dudosos | La nota cambia de 0,41 a 0,62 según el experto |
-| Juez que aprende (un modelo pequeño que decide qué propuestas aprobar, entrenado con los aciertos e inventados del examen de estudio) | Separar lo real de lo inventado mejor que la confianza | Las reglas a mano no funcionaron; la confianza sola tampoco |
-| Varios detectores que votan (el "revisor" de la cascada original, nunca construido) | Inventos: un invento rara vez lo ven todos | Idea de jhonatan del 18 oct, pendiente |
-| Lupa de contraste (realzar los filamentos débiles antes de mirar) | Los casi invisibles (33 % encontrados) | Es la bolsa con peor acierto |
-| Reentrenar al final con las 707 imágenes (también las del examen) | Más datos: +20 % | Lo hace el notebook público del 0,70 |
-| Datos externos (otros telescopios GONG a la misma hora, magnetograma) | Débiles y dudosos | Aparcado por decisión de jhonatan hasta que lo oficial se estanque, y ya se ha estancado |
-| Usar las 2 GPU T4 | Velocidad (rondas más baratas) | Ahora se usa 1 de 2 |
+Cómo se hace, paso a paso:
+
+1. **Dos detectores YOLO11m-seg a 1024 px**, entrenados igual con las 586 imágenes de estudio:
+   - ronda 5: la foto normal (tres copias iguales en los canales de color);
+   - ronda 7: la foto vista de tres formas (`filamentos/yolo.py`, `tres_vistas`): original, contraste local (CLAHE) y "solo lo oscuro y fino" (black-hat).
+2. Cada YOLO propone todo lo que ve desde confianza 0,1, y cada propuesta se redibuja a 2048 con el **refinador** de la ronda 3 (`filamentos/candidatos.py`, `procesar`).
+3. **Jurado** (`analisis/jurado_envio.py`, misma regla que `analisis/jurado_yolo.py`): las propuestas de los dos que se solapan (IoU > 0,5) son "el mismo caso". Pasa si **los dos** lo ven con confianza ≥ 0,2. Se queda con la silueta del más seguro, y se unen los que se tocan.
+
+| | Examen | Aciertos | Inventados | Escapados | Kaggle |
+|---|---|---|---|---|---|
+| Ronda 5 sola | 0,4560 (0,452 honesto) | 878 | 381 | 489 | — |
+| Ronda 7 sola | 0,4557 | 871 | 366 | 496 | — |
+| **Jurado 5 + 7** | **0,4607 honesto** | 892 | 382 | 475 | **0,39** |
+
+Por qué funciona: dos YOLO casi iguales fallan en los mismos sitios, y votar no sirve de nada. El de tres vistas mira la foto de otra manera, así que sus errores son algo distintos, y lo que ven los dos es más fiable. Así el umbral puede bajar a 0,2 (más aciertos) sin que se disparen los inventados. Examen → Kaggle: −0,07, como en la ronda 3 (0,4405 → 0,38).
+
+Notebooks de Kaggle: `filamentos-ronda-5-yolo` y `filamentos-ronda-5-tta-envio` (candidatos del test de la ronda 5), y `filamentos-ronda-7-tres-vistas`. Archivo enviado: `submission_jurado_r5_r7.csv` (1.212 filamentos en 177 de 180 imágenes).
+
+## 7. Lo que queda por probar (25 oct 2026, para discutir)
+
+| Idea | Estado | Qué ataca | Dato que la apoya |
+|---|---|---|---|
+| Más jueces que miren distinto (otra "vista", otro tamaño de modelo, otra arquitectura con su propio umbral) | Pendiente | Inventos y dudosos | El jurado solo suma si los jueces fallan en sitios distintos (5 + 7 sí; YOLO iguales no). Con un tercero ya da 0,4630 |
+| Reentrenar al final con las 707 imágenes (también las del examen) | Pendiente | Un 20 % más de datos | La curva dice que suma poco, pero es lo último antes de cerrar; no se puede medir en local |
+| Datos externos: magnetogramas y otros telescopios GONG, solo para entrenar | Pendiente | Débiles y dudosos | Los filamentos están sobre la línea donde el campo magnético cambia de signo. En el test solo se puede usar la foto H-alfa |
+| Preentrenar con fotos H-alfa sin etiquetar | Pendiente | Que el modelo "conozca" mejor el Sol | Permitido por los organizadores |
+| Juez que aprende | Probado (tribunal, 21 oct) | — | Sin mejora: 0,444 |
+| Estilo de un experto | Descartado | — | No se puede adivinar qué grupo anotó cada imagen del test |
+| Lupa de contraste | Probado (ronda 7) | — | Sola no sube; útil en el jurado |
+| Varios detectores que votan | Probado | — | Iguales no suman; distintos sí (jurado 5 + 7) |
+| Usar las 2 GPU T4 | Pendiente | Velocidad | Ahora se usa 1 de 2 |
+| Informe final (4 páginas) y repo público | Pendiente | 30 % de la nota | Cierre el 15 nov 2026 |
