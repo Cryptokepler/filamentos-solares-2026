@@ -5,6 +5,7 @@ Se entrena con los mismos datos que el detector de la ronda 3 (cada experto como
 refinador, el simulador y la votación sin GPU.
 """
 import os
+from concurrent.futures import ProcessPoolExecutor
 
 import cv2
 import numpy as np
@@ -12,6 +13,7 @@ from PIL import Image
 from pycocotools import mask as mask_utils
 from scipy.sparse.csgraph import connected_components
 
+from . import clasico
 from .candidatos import de_texto
 from .datos import TAM
 
@@ -35,6 +37,47 @@ def tres_vistas(img):
     return np.stack([img, clahe, oscuro], -1)
 
 
+def venas(img):
+    """Juez "angiografía" (25 oct 2026): la foto y un detector de venas (filtro de Frangi) en dos tamaños.
+
+    img uint8 [H,W] (gris) -> uint8 [H,W,3]:
+      0) la original;
+      1) venas finas (Frangi, sigmas 1,5-2,5 px a 1024): rayas oscuras y alargadas estrechas;
+      2) venas gruesas (sigmas 4-6 px a 1024): rayas oscuras y alargadas anchas.
+    El filtro marca lo oscuro con forma de tubo y apaga lo redondo (manchas solares, granulado). Fuera del disco
+    (radio > 0,98) se pone a 0 para que el borde del Sol no salga como una vena gigante.
+    """
+    from skimage.filters import frangi
+    esc = img.shape[0] / 1024
+    cx, cy, R = clasico.disco_solar(img.astype(np.float32))
+    yy, xx = np.indices(img.shape)
+    dentro = np.hypot(xx - cx, yy - cy) / R < 0.98
+    x = img.astype(np.float32) / 255
+    canales = [img]
+    for sigmas in ((1.5, 2.5), (4, 6)):
+        f = frangi(x, sigmas=[s * esc for s in sigmas], black_ridges=True)
+        f[~dentro] = 0
+        f = f / (np.percentile(f[dentro], 99.5) + 1e-9) if dentro.any() else f
+        canales.append((np.clip(f, 0, 1) * 255).astype(np.uint8))
+    return np.stack(canales, -1)
+
+
+VISTA = {"tres": tres_vistas, "venas": venas}
+
+
+def _vista(vistas):
+    """vistas=True es la ronda 7 (tres_vistas); un nombre elige otra; False, la foto tal cual."""
+    return VISTA["tres" if vistas is True else vistas] if vistas else None
+
+
+def _guardar_imagen(tarea):
+    origen, destino, res, vistas = tarea
+    img = Image.open(origen).convert("L").resize((res, res), Image.BILINEAR)
+    if vistas:
+        img = Image.fromarray(_vista(vistas)(np.asarray(img)))
+    img.save(destino)
+
+
 def preparar_datos(datos, anot, tr, val, salida, res=1024, vistas=False):
     """Carpeta en formato YOLO: una imagen a res px por imagen original y un fichero de etiquetas por
     experto (la misma imagen se repite con otro nombre, enlazada, una vez por experto). Las listas de
@@ -42,14 +85,12 @@ def preparar_datos(datos, anot, tr, val, salida, res=1024, vistas=False):
     for parte, nombres in (("train", tr), ("val", val)):
         os.makedirs(f"{salida}/images/{parte}", exist_ok=True)
         os.makedirs(f"{salida}/labels/{parte}", exist_ok=True)
+        tareas = [(f"{datos}/train/train_images/{n}", f"{salida}/images/{parte}/{os.path.splitext(n)[0]}.png", res, vistas)
+                  for n in nombres if not os.path.exists(f"{salida}/images/{parte}/{os.path.splitext(n)[0]}.png")]
+        with ProcessPoolExecutor(os.cpu_count()) as pool:  # las vistas con filtros tardan ~2 s por imagen
+            list(pool.map(_guardar_imagen, tareas))
         for n in nombres:
             base = os.path.splitext(n)[0]
-            origen = f"{salida}/images/{parte}/{base}.png"
-            if not os.path.exists(origen):
-                img = Image.open(f"{datos}/train/train_images/{n}").convert("L").resize((res, res), Image.BILINEAR)
-                if vistas:
-                    img = Image.fromarray(tres_vistas(np.asarray(img)))
-                img.save(origen)
             for e, anns in anot[n].items():
                 nombre = f"{base}_{e}"
                 destino = f"{salida}/images/{parte}/{nombre}.png"
@@ -72,10 +113,10 @@ def preparar_datos(datos, anot, tr, val, salida, res=1024, vistas=False):
 def detector(modelo, res=1024, conf_min=0.1, vistas=False):
     """Función img uint8 [res,res] -> (máscaras [N,res,res] bool, confianzas [N]), como detector.detectar.
 
-    vistas=True: el modelo se entrenó con tres_vistas(). Ultralytics lee los PNG de entrenamiento con OpenCV (BGR) y
+    vistas=True (tres_vistas) o un nombre de VISTA: la vista con la que se entrenó el modelo. Ultralytics lee los PNG de entrenamiento con OpenCV (BGR) y
     trata igual un array que le pasamos, así que se invierte el orden de canales para que coincida."""
     def detectar(img):
-        x = tres_vistas(img)[..., ::-1] if vistas else np.stack([img] * 3, -1)
+        x = _vista(vistas)(img)[..., ::-1] if vistas else np.stack([img] * 3, -1)
         r = modelo.predict(np.ascontiguousarray(x), imgsz=res, conf=conf_min, retina_masks=True,
                            max_det=300, verbose=False)[0]
         if r.masks is None or not len(r.boxes):
