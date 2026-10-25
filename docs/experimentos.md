@@ -389,6 +389,14 @@ Idea de jhonatan: "despigmentar" la imagen, enseñarle al modelo la misma foto p
 
 
 
+## Tercer juez A: "angiografía" (detector de venas) (25 oct 2026)
+
+Decidido con jhonatan después del 0,39: el jurado solo suma si los jueces miran distinto. Se prueban terceros jueces **uno a uno** (A, luego B "Sol aplanado", luego C "Sol desenrollado") y se combinan después según lo que salga.
+
+Juez A: YOLO11m-seg igual que las rondas 5 y 7, con otra vista (`filamentos/yolo.py`, `venas`): canal 1 la original, canales 2 y 3 el filtro de Frangi (detector de "venas" de las angiografías) para rayas oscuras y alargadas finas (σ 1,5-2,5 px a 1024) y gruesas (σ 4-6 px). Apaga lo redondo (manchas solares, granulado); fuera del disco se pone a 0. Notebook genérico `notebooks/generar_notebook_juez.py venas` → `juez_venas.ipynb` (guarda candidatos del examen y del test). Probado en pequeño en CPU.
+
+**Esperado (antes de lanzar):** solo, entre 0,43 y 0,46 (puede bajar: dos de los tres canales ya no son la foto). En el jurado 5 + 7 + venas: entre 0,458 y 0,470 honesto, frente a 0,4607 de 5 + 7. Si el jurado de tres pasa de 0,465, se monta el envío.
+
 ## Análisis sin GPU
 
 - **La tabla pública de Kaggle está rota (20 oct 2026).** El notebook público "Please fix the Leaderboard" demuestra que enviar máscaras vacías puntúa entre 0,70 y 1,00. Los organizadores dicen en el foro que se toman "muy en serio" un 0,41 y que revisarán a mano todas las notas altas. Los participantes honestos del foro van por 0,40-0,46. Conclusión: la meta de "alcanzar al líder (0,64)" no vale; la brújula es nuestro examen local.
