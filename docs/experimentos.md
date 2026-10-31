@@ -424,6 +424,18 @@ El jurado del premio mirará a ojo la calidad de las siluetas en ejemplos que el
 
 Lectura: tapamos las partes finas del experto casi igual que otro experto, pero porque nuestra silueta es algo más gorda y redonda: nuestras siluetas tienen la mitad de "parte fina" propia (7 % frente a 14 %). A ojo (`/mnt/project-files/barbs/ejemplos_barbs.png`, verde experto, rojo nosotros): bordes más lisos y algo más anchos, y se pierden las colas finas de los extremos. Las ramitas laterales de verdad son raras en las anotaciones. Siguiente prueba propuesta (CPU): subir el umbral del refinador (0,5 → 0,6-0,7) para afinar sin perder PQ.
 
+**Umbral del refinador (31 oct 2026, CPU, `analisis/umbral_refinador.py`, refinador bueno de la ronda 3; con 0,5 reproduce 0,4563):**
+
+| Umbral | PQ (mejor / honesto) | Aciertos / inventados / escapados | Cubre partes < 9 px del experto | Parte fina propia |
+|---|---|---|---|---|
+| 0,4 | 0,4544 / 0,4503 | 875 / 381 / 492 | 67,3 % | 6,1 % |
+| 0,5 (actual) | 0,4563 / 0,4524 | 879 / 380 / 488 | 65,5 % | 7,1 % |
+| 0,6 | 0,4573 / 0,4531 | 883 / 377 / 484 | 63,7 % | 8,4 % |
+| 0,7 | 0,4534 / 0,4489 | 879 / 381 / 488 | 61,6 % | 9,8 % |
+| 0,8 | 0,4407 / 0,4378 | 860 / 399 / 507 | 59,6 % | 11,4 % |
+
+Lectura: subir el umbral adelgaza la silueta (más "lápiz fino"), pero NO recupera las colas: cubre menos parte fina del experto, no más. Las colas se pierden porque el refinador no las ve, no por el umbral. 0,6 da lo mismo que 0,5 (dentro del ruido) con siluetas un poco más finas; 0,8 empeora. Dibujo antes (0,5) y después (0,7): `/mnt/project-files/barbs/antes_despues_umbral.png`.
+
 ## Análisis sin GPU
 
 - **La tabla pública de Kaggle está rota (20 oct 2026).** El notebook público "Please fix the Leaderboard" demuestra que enviar máscaras vacías puntúa entre 0,70 y 1,00. Los organizadores dicen en el foro que se toman "muy en serio" un 0,41 y que revisarán a mano todas las notas altas. Los participantes honestos del foro van por 0,40-0,46. Conclusión: la meta de "alcanzar al líder (0,64)" no vale; la brújula es nuestro examen local.
