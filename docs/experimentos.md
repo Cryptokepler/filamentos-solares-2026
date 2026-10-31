@@ -399,6 +399,19 @@ Juez A: YOLO11m-seg igual que las rondas 5 y 7, con otra vista (`filamentos/yolo
 
 **Real (25 oct 2026, 185 min de GPU, `filamentos-juez-venas` versión 2):** solo, con refinador, **0,4425** a umbral 0,25 (aciertos 842, inventados 382, escapados 525), frente a 0,4560 de la ronda 5 (878 / 381 / 489). Dentro de lo esperado, en la parte baja: inventa lo mismo pero se le escapan 36 más, (de sus 525 escapados, 276 miden menos de 1.000 px). YOLO solo 0,350. Entrenamiento 160 min (tope 2,5 h). `submission.csv` generado (1.193 filamentos en 177 imágenes), no enviado. Falta lo importante: medir el jurado 5 + 7 + venas con los candidatos del examen.
 
+**Jurado con venas (31 oct 2026, `analisis/jurado_yolo.py`, sin GPU), honesto = regla elegida en una mitad del examen y medida en la otra:**
+
+| Jurado | Mejor | Honesto | Aciertos / inventados / escapados (mejor) |
+|---|---|---|---|
+| 5 + 7 (el del 0,39 en Kaggle) | 0,4606 | 0,4607 | 892 / 382 / 475 |
+| 5 + venas | 0,4634 | 0,4573 | 905 / 384 / 462 |
+| 5 + 7 + venas | 0,4609 | 0,4554 | 872 / 341 / 495 |
+| 5 + 7 + curva 50 % | 0,4629 | 0,4630 | 867 / 329 / 500 |
+| 5 + venas + curva 50 % | 0,4655 | 0,4644 | 894 / 358 / 473 |
+| 5 + 7 + venas + curva 50 % | 0,4633 | 0,4613 | 911 / 402 / 456 |
+
+Lectura: el juez venas no suma. El jurado de tres que se pensaba (5 + 7 + venas) queda en 0,4554 honesto, por debajo del 0,4607 de 5 + 7. El mejor de todos (5 + venas + curva 50 %, 0,4644) gana solo +0,004 a 5 + 7 y +0,001 a 5 + 7 + curva, dentro del ruido (±0,015), y no pasa el listón de 0,465. No se monta envío.
+
 ## Análisis sin GPU
 
 - **La tabla pública de Kaggle está rota (20 oct 2026).** El notebook público "Please fix the Leaderboard" demuestra que enviar máscaras vacías puntúa entre 0,70 y 1,00. Los organizadores dicen en el foro que se toman "muy en serio" un 0,41 y que revisarán a mano todas las notas altas. Los participantes honestos del foro van por 0,40-0,46. Conclusión: la meta de "alcanzar al líder (0,64)" no vale; la brújula es nuestro examen local.
