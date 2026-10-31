@@ -412,6 +412,18 @@ Juez A: YOLO11m-seg igual que las rondas 5 y 7, con otra vista (`filamentos/yolo
 
 Lectura: el juez venas no suma. El jurado de tres que se pensaba (5 + 7 + venas) queda en 0,4554 honesto, por debajo del 0,4607 de 5 + 7. El mejor de todos (5 + venas + curva 50 %, 0,4644) gana solo +0,004 a 5 + 7 y +0,001 a 5 + 7 + curva, dentro del ruido (±0,015), y no pasa el listón de 0,465. No se monta envío.
 
+## Milla extra 1: ¿nos comemos los barbs? (31 oct 2026, sin GPU)
+
+El jurado del premio mirará a ojo la calidad de las siluetas en ejemplos que elija, "incluidos los barbs" (foro, 29 oct). `analisis/barbs.py` separa la "parte fina" de cada filamento de experto (lo que desaparece con una apertura de radio r) y mide, en las parejas que casan, cuánto cubrimos frente a lo que cubre otro experto (ronda 5, umbral 0,25, 501 parejas en imágenes con 2-3 expertos):
+
+| Ancho de la parte fina | Cubrimos | Otro experto cubre | Parte fina propia / área: nosotros | Experto |
+|---|---|---|---|---|
+| < 5 px | 47,5 % | 50,3 % | 0,6 % | 2,1 % |
+| < 9 px | 65,5 % | 66,9 % | 7,1 % | 14,2 % |
+| < 13 px | 72,2 % | 71,3 % | 22,3 % | 32,1 % |
+
+Lectura: tapamos las partes finas del experto casi igual que otro experto, pero porque nuestra silueta es algo más gorda y redonda: nuestras siluetas tienen la mitad de "parte fina" propia (7 % frente a 14 %). A ojo (`/mnt/project-files/barbs/ejemplos_barbs.png`, verde experto, rojo nosotros): bordes más lisos y algo más anchos, y se pierden las colas finas de los extremos. Las ramitas laterales de verdad son raras en las anotaciones. Siguiente prueba propuesta (CPU): subir el umbral del refinador (0,5 → 0,6-0,7) para afinar sin perder PQ.
+
 ## Análisis sin GPU
 
 - **La tabla pública de Kaggle está rota (20 oct 2026).** El notebook público "Please fix the Leaderboard" demuestra que enviar máscaras vacías puntúa entre 0,70 y 1,00. Los organizadores dicen en el foro que se toman "muy en serio" un 0,41 y que revisarán a mano todas las notas altas. Los participantes honestos del foro van por 0,40-0,46. Conclusión: la meta de "alcanzar al líder (0,64)" no vale; la brújula es nuestro examen local.
