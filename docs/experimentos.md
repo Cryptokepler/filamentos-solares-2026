@@ -436,6 +436,19 @@ Lectura: tapamos las partes finas del experto casi igual que otro experto, pero 
 
 Lectura: subir el umbral adelgaza la silueta (más "lápiz fino"), pero NO recupera las colas: cubre menos parte fina del experto, no más. Las colas se pierden porque el refinador no las ve, no por el umbral. 0,6 da lo mismo que 0,5 (dentro del ruido) con siluetas un poco más finas; 0,8 empeora. Dibujo antes (0,5) y después (0,7): `/mnt/project-files/barbs/antes_despues_umbral.png`.
 
+**Estirar las colas por la vena oscura (1 nov 2026, CPU, `analisis/estirar_colas.py`):** cada silueta (refinador a 0,6) crece 1 px por paso, hasta L pasos, solo por píxeles que Frangi marca como vena oscura (fuerza ≥ a × la mediana de la vena dentro de la silueta) y más oscuros que el fondo, sin entrar en otras siluetas.
+
+| a (exigencia) | L = 10 | L = 25 | Cubre < 9 px del experto (L=10) | Parte fina propia (L=10) |
+|---|---|---|---|---|
+| sin estirar | 0,4573 | — | 63,7 % | 8,4 % |
+| 0,5 | 0,4405 | 0,4278 | 69,0 % | 14,0 % |
+| 1 | 0,4471 | 0,4414 | 68,0 % | 13,0 % |
+| 2 | 0,4514 | 0,4508 | 66,6 % | 11,6 % |
+| 4 | 0,4550 | 0,4545 | 65,3 % | 10,2 % |
+| 6 | 0,4564 | 0,4563 | 64,8 % | 9,5 % |
+
+Lectura: sí recupera colas (con a = 0,5 la silueta llega al 14 % de parte fina, como el experto), pero cada píxel estirado cuesta nota: crece también por venas que el experto no dibujó y baja el IoU. Honesto: elige no estirar (0,4562). Descartado; nos quedamos con el refinador a 0,6.
+
 ## Análisis sin GPU
 
 - **La tabla pública de Kaggle está rota (20 oct 2026).** El notebook público "Please fix the Leaderboard" demuestra que enviar máscaras vacías puntúa entre 0,70 y 1,00. Los organizadores dicen en el foro que se toman "muy en serio" un 0,41 y que revisarán a mano todas las notas altas. Los participantes honestos del foro van por 0,40-0,46. Conclusión: la meta de "alcanzar al líder (0,64)" no vale; la brújula es nuestro examen local.
