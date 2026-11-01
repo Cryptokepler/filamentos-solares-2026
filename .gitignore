@@ -6,3 +6,4 @@ visor/data.js
 __pycache__/
 .DS_Store
 *.pt
+!weights/*.pt

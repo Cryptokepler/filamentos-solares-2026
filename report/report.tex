@@ -1,0 +1,147 @@
+% Draft of the 4-page report (IEEE BigData Cup 2026, Filament Segmentation).
+% Paste into the organizers' Overleaf template; lines marked [JV] are to be rewritten in Jhonatan's own words.
+\documentclass[conference]{IEEEtran}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{hyperref}
+
+\begin{document}
+
+\title{Two Detectors, One Jury: Solar Filament Segmentation\\at the Limit of Expert Agreement}
+
+\author{\IEEEauthorblockN{Jhonatan Venegas}
+\IEEEauthorblockA{Independent participant\\
+\url{https://github.com/Cryptokepler/filamentos-solares-2026}}}
+
+\maketitle
+
+\begin{abstract}
+We segment solar filaments in full-disk GONG H$\alpha$ images (MAGFiLO, $2048\times2048$) with two YOLO11-seg
+instance detectors, a U-Net refiner that redraws each filament at full resolution, and a two-of-two jury.
+On a fixed local exam of 121 training images the model reaches a Panoptic Quality (PQ) of 0.461
+(Kaggle public 0.39), against 0.340 when one expert is scored against another. Its matched masks overlap the
+expert's with a mean IoU of 0.68, above the 0.64 two experts reach with each other. We document 20 measured
+ideas, most of them negative, and show that the remaining error is concentrated in small, faint filaments
+on which the experts themselves disagree.
+\end{abstract}
+
+\section{Motivation}
+% [JV] Why I joined, in my own words.
+Filaments are dense, cool plasma suspended above polarity inversion lines; when they erupt they can become
+coronal mass ejections, and those drive geomagnetic storms. The 1859 Carrington event and the March 1989
+blackout of the Qu\'ebec power grid are reminders of what such storms do to technology on Earth. Detecting
+filaments automatically, every few minutes and on the whole disk, is a small but concrete step towards
+watching them before they erupt.
+
+\section{Data and evaluation}
+The training set has 707 images, 296 of them annotated by two or three experts; the test set has 180. The
+metric is Panoptic Quality per filament: a prediction matches an annotation when IoU $>0.5$, and
+$\mathrm{PQ} = \mathrm{SQ}\cdot\frac{TP}{TP+\frac12 FP+\frac12 FN}$, with SQ the mean IoU of the matches.
+
+Because the public leaderboard was unreliable during the competition (empty masks and leaked annotations
+scored above 0.55), we never tuned on it. We fixed a local exam of 121 images ($\mathrm{md5}(\text{name})
+\bmod 100 < 15$), trained only on the other 586, and scored each expert separately, pooling the counts as the
+metric does. The exam noise is about $\pm0.015$ (half-split differences). Across rounds the exam predicted
+the direction of the Kaggle score, with an offset of about $-0.07$.
+
+\textbf{The human reference.} Scoring one expert against another on the 296 multi-expert images gives
+PQ $=0.340$ (SQ $=0.64$). Agreement collapses for small filaments: for annotations under 330 px another expert
+draws a matching filament only 41\% of the time, and 61\% of them are drawn by a single expert.
+
+\section{Method}
+The pipeline is in \texttt{filamentos/final.py} (Fig.~\ref{fig:pipeline}).
+
+\textbf{Detectors.} Two YOLO11m-seg models (Ultralytics, COCO-pretrained) at 1024 px, trained on the 586
+images with each expert's annotation as a separate example (2.7 h and 2.9 h on one T4). The first sees the
+plain image. The second sees three views, one per channel: the original, local contrast (CLAHE) and a
+black-hat map that keeps only what is darker than its surroundings and thin, removing the limb darkening.
+% [JV] Where the "three views / remove the pigment" idea came from.
+Each proposes everything with confidence $\ge0.1$.
+
+\textbf{Refiner.} Detector masks at 1024 px are too coarse at the edges. A U-Net (ResNet-18 encoder) redraws
+each proposal on a square crop of $1.8\times$ its size resized to 256 px, averaging four flips, at threshold
+0.5. We keep only the connected component that touches the detector mask, so a neighbour inside the crop is
+not swallowed. The refiner consistently adds $+0.05$ PQ (SQ $0.64\rightarrow0.68$).
+
+\textbf{Cleaning and jury.} Per detector we drop proposals whose mean radius exceeds $0.95\,R_\odot$ (limb
+artefacts) and near-duplicates (IoU $>0.5$). Proposals of the two detectors that overlap with IoU $>0.5$
+form a case, which is kept only if both see it with confidence $\ge0.2$; its mask is the most confident
+one. Finally, touching masks are merged, so no pixel belongs to two filaments. Inference uses only the
+test image and runs on a CPU in about 6 s per image.
+
+\begin{figure}[t]
+\centering
+\fbox{\parbox{0.95\columnwidth}{\centering\small
+H$\alpha$ $2048^2$ $\rightarrow$ resize 1024 $\rightarrow$
+\{YOLO plain, YOLO 3 views\} $\rightarrow$ U-Net refiner (crops at 2048) $\rightarrow$
+limb \& duplicate cleaning $\rightarrow$ jury 2-of-2 (conf $\ge0.2$) $\rightarrow$ merge touching
+$\rightarrow$ RLE}}
+\caption{Final pipeline. [Replace with a drawn diagram.]}
+\label{fig:pipeline}
+\end{figure}
+
+\section{Results}
+Table~\ref{tab:rounds} lists the rounds that changed the model. The single large step was moving from
+semantic segmentation to instance detection plus refinement; later steps added about 0.01 each.
+
+\begin{table}[t]
+\caption{Local exam (121 images, all experts pooled) and Kaggle public score.}
+\label{tab:rounds}
+\centering\small
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+Model & PQ & TP / FP / FN & Kaggle \\
+\midrule
+Expert vs.\ expert & 0.340 & -- & -- \\
+Classical (dark regions) & 0.098 & -- & -- \\
+U-Net + rules & 0.384 & 826 / 648 / 541 & 0.34 \\
+Mask R-CNN + refiner & 0.441 & 820 / 350 / 547 & 0.38 \\
+YOLO plain + refiner & 0.456 & 878 / 381 / 489 & -- \\
+YOLO 3 views + refiner & 0.456 & 871 / 366 / 496 & -- \\
+\textbf{Jury of both} & \textbf{0.461} & 892 / 382 / 475 & \textbf{0.39} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Why the jury works.} Two YOLOs trained the same way fail on the same cases: a jury of models trained
+on 25--100\% of the data gave no gain (0.454--0.458). The three-view model fails elsewhere, so agreement
+between the two is a better signal than either confidence, and the threshold can drop to 0.2 without
+inflating false positives.
+
+\textbf{Mask quality.} Matched masks reach SQ $=0.68$, while two experts reach 0.64, and our area is 1.03
+times the expert's. Thin parts (barbs, tails) were measured by morphological opening: of the expert's
+structures thinner than 9 px we cover 65.5\%, another expert covers 66.9\%. Our masks are smoother (thin part
+7\% of the area vs.\ 14\%) and miss some tails at the ends; growing tails along dark ridges (Frangi)
+recovered them but lowered PQ (0.44--0.456), so it was not kept.
+
+\textbf{Negative results.} All measured on the same exam: test-time flips ($-0.008$); a small-filament
+specialist at 2048 px (finds 88 more filaments, invents about 170); training on more images of the same kind
+(learning curve 0.428 / 0.447 / 0.440 / 0.453 at 25 / 50 / 75 / 100\%); hand-written rules and a learned
+judge on crops and features (0.444); a third detector on a Frangi vesselness view (0.455 in the jury);
+higher refiner thresholds; and post-processing that joins fragments or removes small masks.
+
+\section{Where the remaining error is}
+We broke down the errors of the plain YOLO model (PQ 0.453) by what another expert did in the same place.
+Of the potential gain, the largest parts are filaments we ``invented'' that another expert did draw (161,
+worth $+0.028$), misses that only one expert drew (182, $+0.032$) and errors on images with a single
+annotator (302, $+0.05$). Errors that are clearly ours (misses confirmed by a second expert, pure inventions,
+near-misses) add up to about 280, at most $+0.05$. 85\% of the misses are smaller than 3{,}000 px, exactly
+where experts agree least; at 1024 px these filaments are still about 6 px wide, so resolution is not the
+limit. Predicting the union of all experts would score 0.658 and copying a single expert 0.605: a model
+trained on all experts learns their average judgement, and the metric rewards matching one of them.
+% [JV] What surprised me most, and what I would tell the organizers about expert disagreement.
+
+\section{Reproducibility}
+The repository contains the code, the three weight files (147 MB), \texttt{requirements.txt} with pinned
+versions and \texttt{notebooks/demo\_final\_model.ipynb}, which loads the weights and writes the submission.
+Every experiment has its expected result written before running and its measured result after, in
+\texttt{docs/experimentos.md}.
+
+\section{Conclusion}
+A plain-image detector and a three-view detector that must agree, followed by a full-resolution refiner,
+segment filaments better than one expert matches another. Further gains on this metric depend less on the
+model than on how the annotations treat small, faint filaments.
+% [JV] Closing in my own words.
+
+\end{document}
