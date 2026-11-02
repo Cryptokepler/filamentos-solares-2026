@@ -46,7 +46,7 @@ Only the test image itself is used at inference (no metadata, no neighbouring fr
 
 - *Locally*: `pip install -r requirements.txt`, then set `MAGFILO` to the folder that contains `train/` and
   `test/` from the competition data (or `TEST_DIR` to a folder of test images) and run all cells. A CPU is
-  enough: about 6 s per image (two detectors + refiner), so ~20 min for the 180 test images.
+  enough: on 4 cores the 180 test images take about 43 min (two detectors + refiner).
 - *Kaggle*: add the competition as Input, turn Internet on, and run the first cell, which clones this
   repository and installs the requirements.
 """)

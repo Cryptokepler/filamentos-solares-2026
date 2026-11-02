@@ -68,7 +68,7 @@ not swallowed. The refiner consistently adds $+0.05$ PQ (SQ $0.64\rightarrow0.68
 artefacts) and near-duplicates (IoU $>0.5$). Proposals of the two detectors that overlap with IoU $>0.5$
 form a case, which is kept only if both see it with confidence $\ge0.2$; its mask is the most confident
 one. Finally, touching masks are merged, so no pixel belongs to two filaments. Inference uses only the
-test image and runs on a CPU in about 6 s per image.
+test image and runs on a 4-core CPU in about 14 s per image (43 min for the 180 test images).
 
 \begin{figure}[t]
 \centering

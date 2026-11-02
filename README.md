@@ -55,7 +55,7 @@ MAGFILO=data/MAGFiLO_1.0_Kaggle_2026 jupyter nbconvert --to notebook --execute n
 
 The notebook writes `submission.csv` for the 180 test images and, if the training data is present, scores
 the local exam (PQ, matched / invented / missed, IoU and Dice distributions, one-to-many and many-to-one).
-A CPU is enough (about 6 s per image). The competition data is not redistributed in this repository.
+A CPU is enough: the 180 test images took 43 min on 4 cores (about 14 s per image). The competition data is not redistributed in this repository.
 
 ## Training
 
@@ -90,3 +90,10 @@ Test-time flips (−0.008), a small-filament specialist at 2048 px (0.439, finds
 more images of the same kind (learning curve flat after ~300 images), hand-written and learned judges,
 juries of identical YOLOs, a Frangi "vessel" view as third judge, higher refiner thresholds, and growing
 mask tails along dark ridges. Details and numbers are in `docs/experimentos.md`.
+
+## Reproducibility check
+
+Running `filamentos/final.py` with the weights in `weights/` on the 180 test images (CPU) gives 1,210 filaments
+in 177 images. Our submitted file (trained and predicted on a Kaggle GPU) has 1,212. Every filament from the
+CPU run has a match in the submitted file: 1,161 with IoU > 0.95 and 49 with IoU between 0.5 and 0.95. The small
+differences come from GPU half-precision versus CPU full precision near the 0.2 confidence threshold.
