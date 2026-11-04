@@ -1,5 +1,5 @@
 % Draft of the 4-page report (IEEE BigData Cup 2026, Filament Segmentation).
-% Paste into the organizers' Overleaf template; lines marked [JV] are to be rewritten in Jhonatan's own words.
+% Paste into the organizers' Overleaf template. Personal passages are Jhonatan's own answers (4 Nov 2026), translated.
 \documentclass[conference]{IEEEtran}
 \usepackage{graphicx}
 \usepackage{booktabs}
@@ -27,7 +27,9 @@ on which the experts themselves disagree.
 \end{abstract}
 
 \section{Motivation}
-% [JV] Why I joined, in my own words.
+I entered this challenge to measure my ability to solve a real problem, and because I knew it could
+contribute to something that helps people and the world. I also wanted to learn what solar filaments are;
+working on this challenge made me study the subject in depth.
 Filaments are dense, cool plasma suspended above polarity inversion lines; when they erupt they can become
 coronal mass ejections, and those drive geomagnetic storms. The 1859 Carrington event and the March 1989
 blackout of the Qu\'ebec power grid are reminders of what such storms do to technology on Earth. Detecting
@@ -56,7 +58,9 @@ The pipeline is in \texttt{filamentos/final.py} (Fig.~\ref{fig:pipeline}).
 images with each expert's annotation as a separate example (2.7 h and 2.9 h on one T4). The first sees the
 plain image. The second sees three views, one per channel: the original, local contrast (CLAHE) and a
 black-hat map that keeps only what is darker than its surroundings and thin, removing the limb darkening.
-% [JV] Where the "three views / remove the pigment" idea came from.
+The idea of ``removing the pigment'' from the photo came from how models work: they do not see the
+image as we do, but through abstract patterns. So we looked for ways to show the image that make the
+patterns and irregularities we care about, the filaments, easier for the model to pick up.
 Each proposes everything with confidence $\ge0.1$.
 
 \textbf{Refiner.} Detector masks at 1024 px are too coarse at the edges. A U-Net (ResNet-18 encoder) redraws
@@ -130,7 +134,13 @@ near-misses) add up to about 280, at most $+0.05$. 85\% of the misses are smalle
 where experts agree least; at 1024 px these filaments are still about 6 px wide, so resolution is not the
 limit. Predicting the union of all experts would score 0.658 and copying a single expert 0.605: a model
 trained on all experts learns their average judgement, and the metric rewards matching one of them.
-% [JV] What surprised me most, and what I would tell the organizers about expert disagreement.
+\textbf{A personal note on expert disagreement.} What surprised me most was the clash between experts.
+Scored against a single expert, a model can look very good; other experts have a different point of view,
+and the average falls. This also taught me about human cognitive biases, and why information has to be
+contrasted: that is what I tried to build into this system, designed with artificial intelligence and my
+own judgement, where two models must agree before a filament is accepted. I do not see the disagreement as a
+flaw of the dataset. People learn in different ways and do not all see the same thing; several points of
+view cover more angles, even blind spots, and from there an agreement, or a disagreement, can be reached.
 
 \section{Reproducibility}
 The repository contains the code, the three weight files (147 MB), \texttt{requirements.txt} with pinned
@@ -141,7 +151,7 @@ Every experiment has its expected result written before running and its measured
 \section{Conclusion}
 A plain-image detector and a three-view detector that must agree, followed by a full-resolution refiner,
 segment filaments better than one expert matches another. Further gains on this metric depend less on the
-model than on how the annotations treat small, faint filaments.
-% [JV] Closing in my own words.
+model than on how the annotations treat small, faint filaments. The same principle that made the jury work,
+contrasting independent points of view, is also what the experts' disagreement offers.
 
 \end{document}
