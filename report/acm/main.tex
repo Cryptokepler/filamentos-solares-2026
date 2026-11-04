@@ -39,10 +39,10 @@
 \author{Jhonatan Venegas}
 \affiliation{%
   \institution{Independent participant}
-  \city{@CITY@}
-  \country{@COUNTRY@}
+  \city{Quer\'etaro}
+  \country{Mexico}
 }
-\email{jhonatanvenegas@usdtcapital.es}   % <- Replace with your own email
+\email{jhonatanvenegasjharol@gmail.com}   % <- Replace with your own email
 
 \begin{abstract}
     This report describes our solution to the Solar Filament Segmentation Challenge~2026, a Kaggle competition on automatic segmentation of solar filaments in GONG H-$\alpha$ observations. Two YOLO11-seg instance detectors, one fed with the plain image and one with three processed views of it, propose filaments; a U-Net refiner redraws each proposal at full resolution; and a two-of-two jury keeps only what both detectors see. On a fixed local exam of 121 training images the model reaches a Panoptic Quality of 0.461 (95\% bootstrap interval 0.444--0.479), against 0.340 when one expert is scored against another, and 0.39 on the public leaderboard. Its matched masks overlap the experts' with a mean IoU of 0.68, higher than two experts reach with each other (0.64). Most of the remaining error lies in small, faint filaments on which the experts themselves disagree.
