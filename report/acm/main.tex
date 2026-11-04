@@ -98,7 +98,7 @@ We use YOLO11m-seg \cite{yolo11} (Ultralytics, COCO-pretrained), an instance-seg
 The first detector sees the plain image. The second sees three views of it, one per colour channel: the original; local contrast (CLAHE, tiles of 64 px); and a black-hat map (morphological closing with a 25~px disk minus the image) that keeps only what is darker than its surroundings and thin, removing the limb darkening. The idea of ``removing the pigment'' comes from how models work: they do not see the image as we do but through abstract patterns, so we looked for views that make the patterns and irregularities we care about easier to pick up. Each detector proposes every object with confidence $\ge 0.1$.
 
 \subsection{Refiner}
-Detector masks at 1024~px are coarse at the edges. A U-Net \cite{unet} with a ResNet-18 encoder (ImageNet-pretrained, \texttt{segmentation-models-pytorch}) redraws each proposal: a square crop of $1.8\times$ the proposal's size is cut from the $2048$~px image, resized to $256$~px, segmented (four flips averaged, threshold 0.5) and pasted back. Only the connected component that touches the detector's mask is kept, so a neighbouring filament inside the crop is not swallowed. The refiner was trained on expert masks with jittered crops (margin 1.5--2.2, shifts up to 10\%) so it does not depend on perfect boxes.
+Detector masks at 1024~px are coarse at the edges. A U-Net \cite{unet} with a ResNet-18 encoder (ImageNet-pretrained, from the segmentation-models-pytorch library) redraws each proposal: a square crop of $1.8\times$ the proposal's size is cut from the $2048$~px image, resized to $256$~px, segmented (four flips averaged, threshold 0.5) and pasted back. Only the connected component that touches the detector's mask is kept, so a neighbouring filament inside the crop is not swallowed. The refiner was trained on expert masks with jittered crops (margin 1.5--2.2, shifts up to 10\%) so it does not depend on perfect boxes.
 
 \subsection{Post-processing and jury}
 For each detector we drop proposals whose mean distance to the disk centre exceeds $0.95\,R_\odot$ (limb artefacts) and near-duplicates (IoU $>0.5$ with a more confident proposal). Proposals of the two detectors that overlap with IoU $>0.5$ form a \emph{case}; a case is kept only if both detectors see it with confidence $\ge 0.2$, and its mask is the most confident refined mask. Finally, kept masks that touch are merged, so no pixel belongs to two filaments. Inference uses only the test image (no metadata, no neighbouring frames) and takes about 14~s per image on a 4-core CPU.
@@ -141,7 +141,14 @@ YOLO 3 views + refiner & 0.456 & 871 / 366 / 496 & -- \\
 \end{tabular}
 \end{table}
 
-\textbf{Mask quality.} The final model's matched masks have a mean IoU of 0.68 (Dice 0.81); the median IoU is 0.68 and 90\% of matches exceed 0.56. Fragmentation is rare: 18 annotated filaments are covered by two or more of our masks (one-to-many) and 41 of our masks cover two or more annotations (many-to-one). Thin structures (barbs, tails) were measured by morphological opening: of the expert's parts thinner than 9~px we cover 65.5\%, another expert covers 66.9\%. Our masks are smoother (thin part 7\% of the area vs.\ 14\%) and miss some tails at the ends.
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{distribution.pdf}
+\caption{Distribution of IoU and Dice over the 894 matched (expert, prediction) pairs of the final model on the local exam. Red line: median.}
+\label{fig:dist}
+\end{figure}
+
+\textbf{Mask quality.} The final model's matched masks have a mean IoU of 0.68 (Dice 0.81); the median IoU is 0.68 and 90\% of matches exceed 0.56 (Fig.~\ref{fig:dist}). Fragmentation is rare: 18 annotated filaments are covered by two or more of our masks (one-to-many) and 41 of our masks cover two or more annotations (many-to-one). Thin structures (barbs, tails) were measured by morphological opening: of the expert's parts thinner than 9~px we cover 65.5\%, another expert covers 66.9\%. Our masks are smoother (thin part 7\% of the area vs.\ 14\%) and miss some tails at the ends.
 
 \textbf{Measured negative results.} Test-time flips ($-0.008$); a small-filament specialist at 2048~px (finds 88 more, invents $\sim$170); more images of the same kind (learning curve 0.428 / 0.447 / 0.440 / 0.453 at 25 / 50 / 75 / 100\%); rule-based and learned judges on crops and features (0.444); a third detector on a Frangi vesselness view; higher refiner thresholds; growing tails along dark ridges ($-0.001$ to $-0.017$); and joining fragments or removing small masks.
 
