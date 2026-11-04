@@ -45,7 +45,7 @@
 \email{jhonatanvenegas@usdtcapital.es}   % <- Replace with your own email
 
 \begin{abstract}
-    This report describes our solution to the Solar Filament Segmentation Challenge~2026, a Kaggle competition on automatic segmentation of solar filaments in GONG H-$\alpha$ observations. Two YOLO11-seg instance detectors, one fed with the plain image and one with three processed views of it, propose filaments; a U-Net refiner redraws each proposal at full resolution; and a two-of-two jury keeps only what both detectors see. On a fixed local exam of 121 training images the model reaches a Panoptic Quality of @PQ@ (95\% bootstrap interval @PQCI@), against 0.340 when one expert is scored against another, and 0.39 on the public leaderboard. Its matched masks overlap the experts' with a mean IoU of @SQ@, higher than two experts reach with each other (0.64). Most of the remaining error lies in small, faint filaments on which the experts themselves disagree.
+    This report describes our solution to the Solar Filament Segmentation Challenge~2026, a Kaggle competition on automatic segmentation of solar filaments in GONG H-$\alpha$ observations. Two YOLO11-seg instance detectors, one fed with the plain image and one with three processed views of it, propose filaments; a U-Net refiner redraws each proposal at full resolution; and a two-of-two jury keeps only what both detectors see. On a fixed local exam of 121 training images the model reaches a Panoptic Quality of 0.461 (95\% bootstrap interval 0.444--0.479), against 0.340 when one expert is scored against another, and 0.39 on the public leaderboard. Its matched masks overlap the experts' with a mean IoU of 0.68, higher than two experts reach with each other (0.64). Most of the remaining error lies in small, faint filaments on which the experts themselves disagree.
 \end{abstract}
 
 \maketitle
@@ -136,12 +136,12 @@ U-Net + rules & 0.384 & 826 / 648 / 541 & 0.34 \\
 Mask R-CNN + refiner & 0.441 & 820 / 350 / 547 & 0.38 \\
 YOLO plain + refiner & 0.456 & 878 / 381 / 489 & -- \\
 YOLO 3 views + refiner & 0.456 & 871 / 366 / 496 & -- \\
-\textbf{Final: jury of both} & \textbf{@PQ@ $\pm$ @PQSD@} & @COUNTS@ & \textbf{0.39} \\
+\textbf{Final: jury of both} & \textbf{0.461 $\pm$ 0.009} & 894 / 379 / 473 & \textbf{0.39} \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\textbf{Mask quality.} The final model's matched masks have a mean IoU of @SQ@ (Dice @DICE@); the median IoU is @IOUMED@ and 90\% of matches exceed @IOUP10@. Fragmentation is rare: @FRAG@ annotated filaments are covered by two or more of our masks (one-to-many) and @MERG@ of our masks cover two or more annotations (many-to-one). Thin structures (barbs, tails) were measured by morphological opening: of the expert's parts thinner than 9~px we cover 65.5\%, another expert covers 66.9\%. Our masks are smoother (thin part 7\% of the area vs.\ 14\%) and miss some tails at the ends.
+\textbf{Mask quality.} The final model's matched masks have a mean IoU of 0.68 (Dice 0.81); the median IoU is 0.68 and 90\% of matches exceed 0.56. Fragmentation is rare: 18 annotated filaments are covered by two or more of our masks (one-to-many) and 41 of our masks cover two or more annotations (many-to-one). Thin structures (barbs, tails) were measured by morphological opening: of the expert's parts thinner than 9~px we cover 65.5\%, another expert covers 66.9\%. Our masks are smoother (thin part 7\% of the area vs.\ 14\%) and miss some tails at the ends.
 
 \textbf{Measured negative results.} Test-time flips ($-0.008$); a small-filament specialist at 2048~px (finds 88 more, invents $\sim$170); more images of the same kind (learning curve 0.428 / 0.447 / 0.440 / 0.453 at 25 / 50 / 75 / 100\%); rule-based and learned judges on crops and features (0.444); a third detector on a Frangi vesselness view; higher refiner thresholds; growing tails along dark ridges ($-0.001$ to $-0.017$); and joining fragments or removing small masks.
 

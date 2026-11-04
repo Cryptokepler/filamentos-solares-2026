@@ -461,3 +461,4 @@ Lectura: sí recupera colas (con a = 0,5 la silueta llega al 14 % de parte fina,
 Modelo final = jurado ronda 5 + ronda 7 (`filamentos/final.py`, pesos en `weights/`, demo `notebooks/demo_final_model.ipynb`).
 - **Esperado:** el mismo `submission.csv` que el envío de 0,39 (1.212 filamentos en 177 imágenes), con pequeñas diferencias por calcular en CPU en vez de GPU.
 - **Real:** 1.210 filamentos en 177 de 180 imágenes, en 43 min con 4 núcleos de CPU. Todos tienen pareja en el envío: 1.161 casi idénticos (IoU > 0,95) y 49 parecidos (0,5-0,95). Reproduce el envío.
+- **Examen con el modelo final de `filamentos/final.py` (4 nov 2026, CPU):** PQ 0,4614 (aciertos 894, inventados 379, escapados 473), SQ 0,681, RQ 0,677. Intervalo bootstrap al 95 % (2.000 remuestreos por imagen): 0,444-0,479 (desviación 0,009). IoU de los aciertos: media 0,681, mediana 0,683; Dice media 0,807. Partidos 18, fusionados 41. Cuadra con el 0,4607 del jurado.
